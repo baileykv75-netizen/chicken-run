@@ -7,6 +7,7 @@ function activateGunWorldline() {
   const speedFactor = player.attackInterval / originalBase;
   const newBase = player.gunArchetype === 'revolver' ? 0.64 : player.gunArchetype === 'rifle' ? 0.86 : 1.18;
   player.attackInterval = Math.max(0.25, newBase * speedFactor);
+  player.revolverTargets = 3;
   player.spearBusy = false;
   player.hammerWindup = 0;
   spearShots = [];
@@ -21,7 +22,7 @@ function performRevolverAttack() {
   const targets = foxes
     .filter((fox) => !fox.dead && fox.health > 0 && distanceSquared(player, fox) <= revolverRange ** 2)
     .sort((a, b) => distanceSquared(player, a) - distanceSquared(player, b))
-    .slice(0, player.doubleSlashChance ? 4 : 3);
+    .slice(0, Math.max(player.revolverTargets || 3, player.doubleSlashChance ? 4 : 3));
   if (!targets.length) return false;
   const baseDamage = Math.max(24, player.attackDamage * 0.78);
   for (const target of targets) {
@@ -81,6 +82,66 @@ function performShotgunAttack() {
   playTone(125, 0.1, 0.06, 'square');
   return hitAny;
 }
+
+const stage4bWeaponUpgrades = weaponUpgrades;
+weaponUpgrades = function stage4bGunUpgrades() {
+  if (!player?.gunMode) return stage4bWeaponUpgrades();
+  if (player.gunArchetype === 'revolver') {
+    return [
+      {
+        id: 'revolver-chamber', icon: '🎯', name: '扩容弹巢',
+        description: '左轮每轮多锁定 1 个目标',
+        apply: () => { player.revolverTargets = Math.min(6, (player.revolverTargets || 3) + 1); },
+      },
+      {
+        id: 'revolver-draw', icon: '⚡', name: '快速拔枪',
+        description: '左轮攻击间隔缩短 14%',
+        apply: () => { player.attackInterval = Math.max(0.24, player.attackInterval * 0.86); },
+      },
+      {
+        id: 'revolver-fan', icon: '🌀', name: '扇面扫射',
+        description: '继承长剑范围，左轮索敌距离提高 22%',
+        apply: () => { player.attackRange *= 1.22; },
+      },
+    ];
+  }
+  if (player.gunArchetype === 'rifle') {
+    return [
+      {
+        id: 'rifle-pierce', icon: '🧷', name: '穿甲弹',
+        description: '步枪额外穿透 2 只狐狸',
+        apply: () => { player.maxPierce += 2; },
+      },
+      {
+        id: 'rifle-bolt', icon: '⚙️', name: '快速拉栓',
+        description: '步枪攻击间隔缩短 13%',
+        apply: () => { player.attackInterval = Math.max(0.28, player.attackInterval * 0.87); },
+      },
+      {
+        id: 'rifle-slide', icon: '💨', name: '战术滑步',
+        description: '每 3 次射击触发一次继承自长枪的位移',
+        apply: () => { player.dashEvery = 3; player.dashDistance *= 1.08; },
+      },
+    ];
+  }
+  return [
+    {
+      id: 'shotgun-caliber', icon: '💣', name: '加重霰弹',
+      description: '霰弹伤害提高 18%，击退提高 20%',
+      apply: () => { player.attackDamage *= 1.18; player.knockback *= 1.2; },
+    },
+    {
+      id: 'shotgun-spread', icon: '📣', name: '短管扩散',
+      description: '继承大锤范围，霰弹覆盖半径提高 20%',
+      apply: () => { player.slamRadius *= 1.2; },
+    },
+    {
+      id: 'shotgun-stun', icon: '💫', name: '震撼弹',
+      description: '霰弹命中附加更长眩晕',
+      apply: () => { player.stunDuration += 0.32; },
+    },
+  ];
+};
 
 function performGunAttack() {
   if (player.gunArchetype === 'revolver') return performRevolverAttack();
@@ -272,6 +333,16 @@ drawPlayer = function drawStage4bPlayer() {
   const healthRatio = clamp(player.health / player.maxHealth, 0, 1);
   roundedRectangle(player.x - 22, player.y + 24, 44, 6, 4, 'rgba(61,41,31,.22)');
   roundedRectangle(player.x - 22, player.y + 24, 44 * healthRatio, 6, 4, healthRatio > 0.35 ? '#e86464' : '#ffb23e');
+};
+
+const stage4bFinishGame = finishGame;
+finishGame = function finishStage4bGame() {
+  const wasGunMode = Boolean(player?.gunMode);
+  const gunName = player?.gunArchetype === 'revolver' ? '左轮' : player?.gunArchetype === 'rifle' ? '步枪' : '霰弹枪';
+  stage4bFinishGame();
+  if (wasGunMode && ui.resultText) {
+    ui.resultText.textContent = ui.resultText.textContent.replace(`使用${WEAPONS[player.weapon].name}`, `使用${gunName}`);
+  }
 };
 
 updateBestText();
