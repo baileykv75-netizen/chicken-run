@@ -1,4 +1,4 @@
-// Spear growth patch: turn late-game spear upgrades into visible multi-projectile scaling.
+// Spear growth patch: visible multi-projectile scaling with mobile-friendly collision batching.
 const stage4eSpearCreatePlayerBase = createPlayer;
 createPlayer = function createStage4eSpearPlayer() {
   const next = stage4eSpearCreatePlayerBase();
@@ -31,6 +31,22 @@ function stage4eSpearVolleyDirections(direction, count) {
     });
   }
   return result;
+}
+
+function stage4ePointSegmentDistanceSquared(px, py, ax, ay, bx, by) {
+  const abx = bx - ax;
+  const aby = by - ay;
+  const lengthSquared = abx * abx + aby * aby;
+  if (lengthSquared <= 0.0001) {
+    const dx = px - ax;
+    const dy = py - ay;
+    return dx * dx + dy * dy;
+  }
+  const projection = ((px - ax) * abx + (py - ay) * aby) / lengthSquared;
+  const t = projection < 0 ? 0 : projection > 1 ? 1 : projection;
+  const dx = px - (ax + abx * t);
+  const dy = py - (ay + aby * t);
+  return dx * dx + dy * dy;
 }
 
 performSpearAttack = function performStage4eSpearVolley() {
@@ -72,60 +88,74 @@ performSpearAttack = function performStage4eSpearVolley() {
     });
   }
 
-  addParticles(player.x + direction.x * 24, player.y + direction.y * 24, '✦', Math.min(5, count + 1));
+  addParticles(player.x + direction.x * 24, player.y + direction.y * 24, '✦', Math.min(4, count));
   playTone(610 + count * 18, 0.065, 0.034, 'triangle');
   return true;
 };
 
 updateSpearShots = function updateStage4eSpearShots(deltaTime) {
-  for (const shot of spearShots) {
-    shot.previousX = shot.x;
-    shot.previousY = shot.y;
-    const outwardDuration = shot.distance / shot.speed;
-    const returnDuration = shot.distance / (shot.speed * 1.16);
+  if (spearShots.length === 0) return;
 
-    if (!shot.returning) {
-      shot.progress += deltaTime / outwardDuration;
-      if (shot.progress >= 1) {
-        shot.progress = 1;
-        shot.returning = true;
+  const isSunRoute = player.overlimitRoute === 'spear-sun';
+  const falloffBase = isSunRoute ? 0.985 : 0.95;
+  const pierceLimit = isSunRoute ? player.maxPierce + 5 : player.maxPierce;
+  const routeMultiplier = isSunRoute ? 1.24 : 1;
+  const previousBatchState = stage4cBatchDamage;
+  let totalHits = 0;
+
+  stage4cBatchDamage = true;
+  try {
+    for (const shot of spearShots) {
+      shot.previousX = shot.x;
+      shot.previousY = shot.y;
+      const outwardDuration = shot.distance / shot.speed;
+      const returnDuration = shot.distance / (shot.speed * 1.16);
+
+      if (!shot.returning) {
+        shot.progress += deltaTime / outwardDuration;
+        if (shot.progress >= 1) {
+          shot.progress = 1;
+          shot.returning = true;
+        }
+      } else {
+        shot.progress -= deltaTime / returnDuration;
       }
-    } else {
-      shot.progress -= deltaTime / returnDuration;
-    }
 
-    shot.x = shot.originX + shot.direction.x * shot.distance * shot.progress;
-    shot.y = shot.originY + shot.direction.y * shot.distance * shot.progress;
+      shot.x = shot.originX + shot.direction.x * shot.distance * shot.progress;
+      shot.y = shot.originY + shot.direction.y * shot.distance * shot.progress;
 
-    const hitSet = shot.returning ? shot.hitBack : shot.hitOut;
-    const pierceKey = shot.returning ? 'pierceBack' : 'pierceOut';
-    const isSunRoute = player.overlimitRoute === 'spear-sun';
-    const falloffBase = isSunRoute ? 0.985 : 0.95;
-    const pierceLimit = isSunRoute ? player.maxPierce + 5 : player.maxPierce;
+      const hitSet = shot.returning ? shot.hitBack : shot.hitOut;
+      const pierceKey = shot.returning ? 'pierceBack' : 'pierceOut';
+      if (shot[pierceKey] >= pierceLimit) continue;
 
-    for (const fox of foxes) {
-      if (
-        fox.dead ||
-        fox.health <= 0 ||
-        hitSet.has(fox) ||
-        shot[pierceKey] >= pierceLimit
-      ) continue;
+      // Cheap broad phase first; exact segment distance runs only for nearby foxes.
+      const padding = 28;
+      const minX = Math.min(shot.previousX, shot.x) - padding;
+      const maxX = Math.max(shot.previousX, shot.x) + padding;
+      const minY = Math.min(shot.previousY, shot.y) - padding;
+      const maxY = Math.max(shot.previousY, shot.y) + padding;
 
-      if (
-        pointSegmentDistance(
-          fox.x,
-          fox.y,
-          shot.previousX,
-          shot.previousY,
-          shot.x,
-          shot.y,
-        ) <= fox.radius + 9
-      ) {
+      for (const fox of foxes) {
+        if (shot[pierceKey] >= pierceLimit) break;
+        if (fox.dead || fox.health <= 0 || hitSet.has(fox)) continue;
+        if (fox.x < minX || fox.x > maxX || fox.y < minY || fox.y > maxY) continue;
+
+        const hitRadius = fox.radius + 9;
+        if (
+          stage4ePointSegmentDistanceSquared(
+            fox.x,
+            fox.y,
+            shot.previousX,
+            shot.previousY,
+            shot.x,
+            shot.y,
+          ) > hitRadius * hitRadius
+        ) continue;
+
         hitSet.add(fox);
         const falloff = Math.pow(falloffBase, shot[pierceKey]);
         shot[pierceKey] += 1;
         const baseDamage = shot.returning ? player.damageBack : player.damageOut;
-        const routeMultiplier = isSunRoute ? 1.24 : 1;
         const volleyMultiplier = shot.damageMultiplier || 1;
         damageFox(
           fox,
@@ -133,13 +163,30 @@ updateSpearShots = function updateStage4eSpearShots(deltaTime) {
           shot.direction,
           player.knockback,
         );
+        totalHits += 1;
       }
     }
+  } finally {
+    stage4cBatchDamage = previousBatchState;
   }
 
-  const hadShot = spearShots.length > 0;
-  spearShots = spearShots.filter((shot) => !(shot.returning && shot.progress <= 0));
-  if (hadShot && spearShots.length === 0 && player && player.weapon === 'spear') {
+  // Compact in place instead of allocating a new projectile array every frame.
+  let writeIndex = 0;
+  for (let readIndex = 0; readIndex < spearShots.length; readIndex += 1) {
+    const shot = spearShots[readIndex];
+    if (shot.returning && shot.progress <= 0) continue;
+    spearShots[writeIndex] = shot;
+    writeIndex += 1;
+  }
+  const hadShots = spearShots.length > 0;
+  spearShots.length = writeIndex;
+
+  if (totalHits > 0 && !stage4cLowFxMode) {
+    const centerShot = spearShots[Math.floor(spearShots.length / 2)];
+    if (centerShot) addParticles(centerShot.x, centerShot.y, '✦', Math.min(2, totalHits));
+  }
+
+  if (hadShots && spearShots.length === 0 && player && player.weapon === 'spear') {
     player.spearBusy = false;
   }
 };
