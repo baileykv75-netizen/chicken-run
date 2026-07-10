@@ -30,9 +30,8 @@ defeatFox = function defeatStage4cFox(fox) {
   const x = fox.x;
   const y = fox.y;
   const type = fox.type;
-  stage4cProgressionDefeatFoxBase(fox);
-
   stage4cChargeCauldron((type === 'brute' ? 3 : 1) + (carriedRescue ? 2 : 0));
+  stage4cProgressionDefeatFoxBase(fox);
 
   if (player?.overlimitRoute === 'sword-chase' && (player.chaseLightCooldown || 0) <= 0) {
     const target = nearestFoxToPoint(x, y, 230);
@@ -157,6 +156,18 @@ currentSkillDefinitions = function currentStage4cSkills() {
     },
   });
   return definitions.concat(stage4cOverlimitDefinitions());
+};
+
+const stage4cProgressionBuildChoicesBase = buildUpgradeChoices;
+buildUpgradeChoices = function buildStage4cUpgradeChoices(excludedIds = new Set()) {
+  if (player?.cauldronReady && !player.overlimitChosen) {
+    const routes = stage4cOverlimitDefinitions();
+    const used = new Set([...excludedIds, ...routes.map((route) => route.id)]);
+    const extra = randomFrom([...weaponUpgrades(), ...commonUpgrades()], used);
+    const choices = extra ? [...routes, extra] : routes;
+    return choices.sort(() => Math.random() - 0.5);
+  }
+  return stage4cProgressionBuildChoicesBase(excludedIds);
 };
 
 const stage4cProgressionSpearDashBase = performSpearDash;
