@@ -13,12 +13,18 @@
     <canvas id="game" aria-label="小鸡快跑游戏画面"></canvas>
 
     <section id="hud" class="hud hidden" aria-live="polite">
-      <div class="hud-left">
-        <div class="pill">🐥 <span id="chicksAlive">10</span>/10</div>
-        <div class="pill">🦊 <span id="foxesDefeated">0</span></div>
+      <div class="hud-top">
+        <div class="hud-left">
+          <div class="pill">🐥 <span id="chicksAlive">10</span>/10</div>
+          <div class="pill">🦊 <span id="foxesDefeated">0</span></div>
+          <div class="pill level-pill">⭐ Lv.<span id="level">1</span></div>
+        </div>
+        <div id="timer" class="timer">03:00</div>
+        <button id="pauseButton" class="icon-button" type="button" aria-label="暂停游戏">Ⅱ</button>
       </div>
-      <div id="timer" class="timer">03:00</div>
-      <button id="pauseButton" class="icon-button" type="button" aria-label="暂停游戏">Ⅱ</button>
+      <div class="xp-track" aria-label="经验值">
+        <div id="xpBar" class="xp-bar"></div>
+      </div>
     </section>
 
     <section id="startPanel" class="panel">
@@ -29,8 +35,10 @@
         <span>电脑：WASD / 方向键移动</span>
         <span>手机：拖动左下角摇杆</span>
         <span>靠近狐狸会自动挥剑</span>
+        <span>击退狐狸升级，选择不同强化</span>
       </div>
       <button id="startButton" class="primary-button" type="button">开始守夜</button>
+      <p id="bestText" class="best-text">最佳纪录：尚未守夜</p>
     </section>
 
     <section id="pausePanel" class="panel hidden">
@@ -39,10 +47,18 @@
       <button id="restartFromPauseButton" class="secondary-button" type="button">重新开始</button>
     </section>
 
+    <section id="upgradePanel" class="panel upgrade-panel hidden">
+      <div class="upgrade-star" aria-hidden="true">⭐</div>
+      <h2>升级啦！</h2>
+      <p>选择一项强化，本局立即生效</p>
+      <div id="upgradeChoices" class="upgrade-choices"></div>
+    </section>
+
     <section id="resultPanel" class="panel hidden">
       <div id="resultEmoji" class="result-emoji" aria-hidden="true">🌅</div>
       <h2 id="resultTitle">天亮了！</h2>
       <p id="resultText"></p>
+      <p id="resultBest" class="result-best"></p>
       <button id="restartButton" class="primary-button" type="button">再守一夜</button>
     </section>
 
@@ -51,6 +67,8 @@
         <div id="joystickKnob" class="joystick-knob"></div>
       </div>
     </div>
+
+    <button id="soundButton" class="sound-button" type="button" aria-label="切换声音">🔊</button>
   </main>
 
   <script type="module" src="./src/main.js"></script>
