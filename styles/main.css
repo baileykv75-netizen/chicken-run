@@ -9,9 +9,7 @@
   --shadow: rgba(70, 46, 28, 0.22);
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 html,
 body {
@@ -23,9 +21,7 @@ body {
   color: var(--ink);
 }
 
-button {
-  font: inherit;
-}
+button { font: inherit; }
 
 #app {
   position: fixed;
@@ -39,16 +35,15 @@ button {
   display: block;
   width: 100%;
   height: 100%;
+  touch-action: none;
 }
 
-.hidden {
-  display: none !important;
-}
+.hidden { display: none !important; }
 
 .hud {
   position: fixed;
   z-index: 10;
-  inset: max(12px, env(safe-area-inset-top)) 12px auto;
+  inset: max(10px, env(safe-area-inset-top)) 10px auto;
   pointer-events: none;
 }
 
@@ -61,7 +56,7 @@ button {
 
 .hud-left {
   display: flex;
-  gap: 8px;
+  gap: 7px;
 }
 
 .pill,
@@ -76,9 +71,7 @@ button {
   font-weight: 900;
 }
 
-.pill {
-  padding: 7px 12px;
-}
+.pill { padding: 7px 11px; }
 
 .timer {
   position: absolute;
@@ -112,7 +105,7 @@ button {
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, #ffe878, #ffae52);
-  transition: width 150ms ease;
+  transition: width 120ms linear;
 }
 
 .panel {
@@ -124,19 +117,18 @@ button {
   max-height: calc(100vh - 28px);
   padding: 26px;
   overflow: auto;
-  transform: translate(-50%, -50%);
+  transform: translate3d(-50%, -50%, 0);
   border: 4px solid white;
   border-radius: 28px;
   background: rgba(255, 248, 222, 0.98);
   box-shadow: 0 18px 42px var(--shadow), 0 8px 0 rgba(140, 92, 54, 0.16);
   text-align: center;
+  overscroll-behavior: contain;
 }
 
 .panel h1,
 .panel h2,
-.panel p {
-  margin-top: 0;
-}
+.panel p { margin-top: 0; }
 
 .panel h1 {
   margin-bottom: 4px;
@@ -151,18 +143,12 @@ button {
 }
 
 .hero-chick,
-.result-emoji {
-  font-size: 72px;
-}
+.result-emoji { font-size: 72px; }
 
-.hero-chick {
-  animation: bounce 1.4s ease-in-out infinite;
-}
+.hero-chick { animation: bounce 1.4s ease-in-out infinite; }
 
 @keyframes bounce {
-  50% {
-    transform: translateY(-8px) rotate(-3deg);
-  }
+  50% { transform: translateY(-8px) rotate(-3deg); }
 }
 
 .subtitle {
@@ -193,6 +179,7 @@ button {
   font-weight: 900;
   cursor: pointer;
   box-shadow: 0 5px 0 rgba(116, 72, 42, 0.24);
+  touch-action: manipulation;
 }
 
 .primary-button {
@@ -210,7 +197,7 @@ button {
 .icon-button:active,
 .sound-button:active,
 .upgrade-choice:active {
-  transform: translateY(3px);
+  transform: translateY(2px);
   box-shadow: 0 2px 0 rgba(116, 72, 42, 0.24);
 }
 
@@ -224,17 +211,14 @@ button {
 
 .upgrade-panel {
   width: min(760px, calc(100vw - 28px));
+  contain: layout paint;
+  animation: none !important;
 }
 
 .upgrade-star {
   font-size: 44px;
-  animation: sparkle 1s ease-in-out infinite alternate;
-}
-
-@keyframes sparkle {
-  to {
-    transform: scale(1.15) rotate(8deg);
-  }
+  transform: none;
+  animation: none;
 }
 
 .upgrade-choices {
@@ -249,11 +233,6 @@ button {
   padding: 16px 12px;
   border: 3px solid #ffe49b;
   background: white;
-}
-
-.upgrade-choice:hover {
-  background: #fffaf0;
-  transform: translateY(-2px);
 }
 
 .upgrade-choice .upgrade-icon {
@@ -278,18 +257,18 @@ button {
 .joystick {
   position: fixed;
   z-index: 12;
-  left: max(22px, env(safe-area-inset-left));
-  bottom: max(22px, env(safe-area-inset-bottom));
   width: 126px;
   height: 126px;
+  pointer-events: none;
+  will-change: left, top;
 }
 
 .joystick-base {
   position: absolute;
   inset: 0;
-  border: 4px solid rgba(255, 255, 255, 0.42);
+  border: 4px solid rgba(255, 255, 255, 0.48);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.2);
   box-shadow: inset 0 0 0 10px rgba(70, 83, 54, 0.08);
 }
 
@@ -300,55 +279,53 @@ button {
   width: 58px;
   height: 58px;
   transform: translate(-50%, -50%);
-  border: 4px solid rgba(255, 255, 255, 0.72);
+  border: 4px solid rgba(255, 255, 255, 0.78);
   border-radius: 50%;
-  background: rgba(255, 248, 222, 0.92);
+  background: rgba(255, 248, 222, 0.94);
   box-shadow: 0 5px 12px rgba(60, 42, 28, 0.24);
 }
 
 .sound-button {
   position: fixed;
   z-index: 14;
-  right: max(16px, env(safe-area-inset-right));
-  bottom: max(16px, env(safe-area-inset-bottom));
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
   width: 48px;
   height: 48px;
   border-radius: 16px;
   cursor: pointer;
 }
 
-@media (max-width: 700px) {
-  .panel {
-    padding: 20px;
+@media (hover: hover) {
+  .upgrade-choice:hover {
+    background: #fffaf0;
+    transform: translateY(-2px);
   }
+}
 
-  .hud-left {
-    gap: 5px;
-  }
+@media (max-width: 700px) {
+  .panel { padding: 20px; }
+
+  .hud-left { gap: 4px; }
 
   .pill {
-    padding: 6px 9px;
+    padding: 6px 8px;
+    font-size: 14px;
   }
 
-  .level-pill {
-    display: none;
-  }
+  .level-pill { display: none; }
 
-  .xp-track {
-    width: 54vw;
-  }
+  .xp-track { width: min(60vw, 330px); }
 
-  .upgrade-choices {
-    grid-template-columns: 1fr;
-  }
+  .upgrade-choices { grid-template-columns: 1fr; }
 
   .upgrade-choice {
     display: grid;
-    min-height: 96px;
-    grid-template-columns: 54px 1fr;
+    min-height: 88px;
+    grid-template-columns: 50px 1fr;
     grid-template-rows: auto auto;
     column-gap: 8px;
-    padding: 10px 14px;
+    padding: 9px 12px;
     text-align: left;
   }
 
@@ -364,13 +341,46 @@ button {
     margin: 0;
   }
 
-  .upgrade-choice .upgrade-description {
-    align-self: start;
-  }
+  .upgrade-choice .upgrade-description { align-self: start; }
 }
 
-@media (pointer: coarse) {
-  #joystick:not(.hidden) {
-    display: block;
+@media (max-width: 480px) and (orientation: portrait) {
+  .hud {
+    inset: max(8px, env(safe-area-inset-top)) 8px auto;
+  }
+
+  .hud-top {
+    align-items: flex-start;
+  }
+
+  .hud-left {
+    max-width: calc(100vw - 118px);
+    flex-wrap: wrap;
+  }
+
+  .pill {
+    padding: 5px 7px;
+    font-size: 13px;
+  }
+
+  .timer {
+    top: 48px;
+    padding: 5px 11px;
+    font-size: 14px;
+  }
+
+  .icon-button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .xp-track {
+    width: calc(100vw - 92px);
+    margin-top: 11px;
+  }
+
+  .sound-button {
+    width: 44px;
+    height: 44px;
   }
 }
