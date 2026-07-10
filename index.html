@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-  <meta name="theme-color" content="#8fd36f" />
-  <meta name="description" content="《小鸡快跑》——保护 10 只小鸡，坚持到天亮。" />
+  <meta name="theme-color" content="#79c86e" />
+  <meta name="description" content="《小鸡快跑》——保护鸡群，选择武器，坚持到天亮。" />
   <title>小鸡快跑</title>
   <link rel="stylesheet" href="./styles/main.css" />
 </head>
@@ -18,6 +18,7 @@
           <div class="pill">🐥 <span id="chicksAlive">10</span>/10</div>
           <div class="pill">🦊 <span id="foxesDefeated">0</span></div>
           <div class="pill level-pill">⭐ Lv.<span id="level">1</span></div>
+          <div class="pill weapon-pill"><span id="weaponIcon">⚔️</span><span id="weaponName">长剑</span></div>
         </div>
         <div id="timer" class="timer">03:00</div>
         <button id="pauseButton" class="icon-button" type="button" aria-label="暂停游戏">Ⅱ</button>
@@ -27,15 +28,33 @@
       </div>
     </section>
 
-    <section id="startPanel" class="panel">
+    <section id="startPanel" class="panel start-panel">
       <div class="hero-chick" aria-hidden="true">🐥</div>
       <h1>小鸡快跑</h1>
-      <p class="subtitle">保护 10 只小鸡，坚持到天亮！</p>
+      <p class="subtitle">选择武器，保护 10 只小鸡，坚持到天亮！</p>
+
+      <div class="weapon-select" id="weaponSelect" aria-label="选择初始武器">
+        <button class="weapon-card selected" data-weapon="sword" type="button">
+          <span class="weapon-card-icon">⚔️</span>
+          <strong>长剑</strong>
+          <small>范围均衡，扇形清场</small>
+        </button>
+        <button class="weapon-card" data-weapon="spear" type="button">
+          <span class="weapon-card-icon">🔱</span>
+          <strong>长枪</strong>
+          <small>投出与召回双路径伤害</small>
+        </button>
+        <button class="weapon-card" data-weapon="hammer" type="button">
+          <span class="weapon-card-icon">🔨</span>
+          <strong>大锤</strong>
+          <small>攻击缓慢，范围击退与眩晕</small>
+        </button>
+      </div>
+
       <div class="instructions">
         <span>电脑：WASD / 方向键移动</span>
-        <span>手机：按住游戏画面任意位置生成摇杆</span>
-        <span>靠近狐狸会自动挥剑</span>
-        <span>击退狐狸升级，选择不同强化</span>
+        <span>手机：按住画面任意位置生成摇杆</span>
+        <span>角色会自动攻击最近的狐狸</span>
       </div>
       <button id="startButton" class="primary-button" type="button">开始守夜</button>
       <p id="bestText" class="best-text">最佳纪录：尚未守夜</p>
@@ -71,6 +90,6 @@
     <button id="soundButton" class="sound-button" type="button" aria-label="切换声音">🔊</button>
   </main>
 
-  <script type="module" src="./src/main.js"></script>
+  <script type="module" src="./src/game.js"></script>
 </body>
 </html>
