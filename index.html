@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#8fd36f" />
+  <meta name="description" content="《小鸡快跑》——保护 10 只小鸡，坚持到天亮。" />
+  <title>小鸡快跑</title>
+  <link rel="stylesheet" href="./styles/main.css" />
+</head>
+<body>
+  <main id="app">
+    <canvas id="game" aria-label="小鸡快跑游戏画面"></canvas>
+
+    <section id="hud" class="hud hidden" aria-live="polite">
+      <div class="hud-left">
+        <div class="pill">🐥 <span id="chicksAlive">10</span>/10</div>
+        <div class="pill">🦊 <span id="foxesDefeated">0</span></div>
+      </div>
+      <div id="timer" class="timer">03:00</div>
+      <button id="pauseButton" class="icon-button" type="button" aria-label="暂停游戏">Ⅱ</button>
+    </section>
+
+    <section id="startPanel" class="panel">
+      <div class="hero-chick" aria-hidden="true">🐥</div>
+      <h1>小鸡快跑</h1>
+      <p class="subtitle">保护 10 只小鸡，坚持到天亮！</p>
+      <div class="instructions">
+        <span>电脑：WASD / 方向键移动</span>
+        <span>手机：拖动左下角摇杆</span>
+        <span>靠近狐狸会自动挥剑</span>
+      </div>
+      <button id="startButton" class="primary-button" type="button">开始守夜</button>
+    </section>
+
+    <section id="pausePanel" class="panel hidden">
+      <h2>已暂停</h2>
+      <button id="resumeButton" class="primary-button" type="button">继续游戏</button>
+      <button id="restartFromPauseButton" class="secondary-button" type="button">重新开始</button>
+    </section>
+
+    <section id="resultPanel" class="panel hidden">
+      <div id="resultEmoji" class="result-emoji" aria-hidden="true">🌅</div>
+      <h2 id="resultTitle">天亮了！</h2>
+      <p id="resultText"></p>
+      <button id="restartButton" class="primary-button" type="button">再守一夜</button>
+    </section>
+
+    <div id="joystick" class="joystick hidden" aria-hidden="true">
+      <div class="joystick-base">
+        <div id="joystickKnob" class="joystick-knob"></div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
