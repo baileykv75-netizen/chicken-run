@@ -7,6 +7,7 @@
   <meta name="description" content="《小鸡快跑》——保护鸡群，在不断增强的狐狸潮中坚持更久。" />
   <title>小鸡快跑</title>
   <link rel="stylesheet" href="./styles/main.css" />
+  <link rel="stylesheet" href="./styles/phase4b.css" />
 </head>
 <body>
   <main id="app">
@@ -57,8 +58,8 @@
       <div class="instructions">
         <span>电脑：WASD / 方向键移动</span>
         <span>手机：按住画面任意位置生成摇杆</span>
-        <span>没有倒计时终点，危险会持续快速上升</span>
-        <span>小鸡只会跟随你，需要主动维持鸡群阵型</span>
+        <span>没有倒计时终点，危险会持续上升</span>
+        <span>每次升级可刷新一次技能选项</span>
       </div>
       <button id="startButton" class="primary-button" type="button">开始坚持</button>
       <p id="bestText" class="best-text">最长坚持：尚无纪录</p>
@@ -75,6 +76,11 @@
       <h2>升级啦！</h2>
       <p>选择一项强化，本局立即生效</p>
       <div id="upgradeChoices" class="upgrade-choices"></div>
+      <div class="upgrade-toolbar">
+        <button id="rerollButton" class="reroll-button" type="button">
+          🔄 刷新选项（<span id="rerollCount">1/1</span>）
+        </button>
+      </div>
     </section>
 
     <section id="resultPanel" class="panel hidden">
@@ -98,5 +104,8 @@
   <script src="./src/phase4a-core.js"></script>
   <script src="./src/phase4a-combat.js"></script>
   <script src="./src/phase4a-loop.js"></script>
+  <script src="./src/phase4b-core.js"></script>
+  <script src="./src/phase4b-systems.js"></script>
+  <script src="./src/phase4b-guns.js"></script>
 </body>
 </html>
