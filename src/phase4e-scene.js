@@ -55,6 +55,22 @@ for (const [x, y, angle] of [[14, 67, -.35], [45, 26, .25], [77, 82, -.1], [86, 
 }
 const stage4eGrassPattern = context.createPattern(stage4eGrassTile, 'repeat');
 
+let stage4eGradientCache = null;
+let stage4eGradientCacheKey = '';
+
+function stage4eBackgroundGradient(pressure) {
+  const pressureStep = Math.round(pressure * 20) / 20;
+  const key = `${world.width}:${world.height}:${pressureStep}`;
+  if (stage4eGradientCache && stage4eGradientCacheKey === key) return stage4eGradientCache;
+
+  const gradient = context.createLinearGradient(0, 0, 0, world.height);
+  gradient.addColorStop(0, `hsl(${108 - pressureStep * 9} 47% ${70 - pressureStep * 5}%)`);
+  gradient.addColorStop(1, `hsl(${119 - pressureStep * 7} 39% ${56 - pressureStep * 5}%)`);
+  stage4eGradientCache = gradient;
+  stage4eGradientCacheKey = key;
+  return gradient;
+}
+
 function stage4eVisibleBounds(margin = 160) {
   const halfWidth = width / (2 * camera.zoom) + margin;
   const halfHeight = height / (2 * camera.zoom) + margin;
@@ -106,15 +122,27 @@ drawBackground = function drawStage4eBackground() {
 
   const danger = typeof dangerLevel === 'number' ? dangerLevel : 1;
   const pressure = clamp((danger - 1) / 10, 0, 1);
-  const gradient = context.createLinearGradient(0, 0, 0, world.height);
-  gradient.addColorStop(0, `hsl(${108 - pressure * 9} 47% ${70 - pressure * 5}%)`);
-  gradient.addColorStop(1, `hsl(${119 - pressure * 7} 39% ${56 - pressure * 5}%)`);
-  context.fillStyle = gradient;
-  context.fillRect(0, 0, world.width, world.height);
+  const bounds = stage4eVisibleBounds();
+  const visibleLeft = Math.max(0, bounds.left);
+  const visibleRight = Math.min(world.width, bounds.right);
+  const visibleTop = Math.max(0, bounds.top);
+  const visibleBottom = Math.min(world.height, bounds.bottom);
+  const visibleWidth = Math.max(0, visibleRight - visibleLeft);
+  const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+
+  if (visibleWidth <= 0 || visibleHeight <= 0) return;
+
+  context.save();
+  context.beginPath();
+  context.rect(visibleLeft, visibleTop, visibleWidth, visibleHeight);
+  context.clip();
+
+  context.fillStyle = stage4eBackgroundGradient(pressure);
+  context.fillRect(visibleLeft, visibleTop, visibleWidth, visibleHeight);
 
   if (stage4eGrassPattern) {
     context.fillStyle = stage4eGrassPattern;
-    context.fillRect(0, 0, world.width, world.height);
+    context.fillRect(visibleLeft, visibleTop, visibleWidth, visibleHeight);
   }
 
   context.save();
@@ -140,14 +168,20 @@ drawBackground = function drawStage4eBackground() {
   context.stroke();
   context.restore();
 
-  context.save();
-  context.fillStyle = 'rgba(255,241,174,.18)';
-  context.beginPath();
-  context.ellipse(world.width / 2, world.height / 2, 285, 210, 0, 0, Math.PI * 2);
-  context.fill();
-  context.restore();
+  const safeX = world.width / 2;
+  const safeY = world.height / 2;
+  if (
+    safeX + 285 >= bounds.left && safeX - 285 <= bounds.right &&
+    safeY + 210 >= bounds.top && safeY - 210 <= bounds.bottom
+  ) {
+    context.save();
+    context.fillStyle = 'rgba(255,241,174,.18)';
+    context.beginPath();
+    context.ellipse(safeX, safeY, 285, 210, 0, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+  }
 
-  const bounds = stage4eVisibleBounds();
   const sceneItems = [
     ['coop', world.width * 0.18, world.height * 0.22, 185, 143],
     ['pond', world.width * 0.75, world.height * 0.28, 225, 141],
@@ -182,13 +216,15 @@ drawBackground = function drawStage4eBackground() {
 
   context.save();
   context.globalAlpha = 0.48;
-  for (const decoration of decorations) {
+  const decorationStep = stage4cLowFxMode || foxes.length >= 20 ? 2 : 1;
+  for (let index = 0; index < decorations.length; index += decorationStep) {
+    const decoration = decorations[index];
     if (decoration.x < bounds.left || decoration.x > bounds.right || decoration.y < bounds.top || decoration.y > bounds.bottom) continue;
     context.fillStyle = decoration.variant > 0.66 ? '#fff2ad' : decoration.variant > 0.33 ? '#f3a9c0' : '#d6e98e';
     context.beginPath();
     context.arc(decoration.x, decoration.y, decoration.size, 0, Math.PI * 2);
     context.fill();
-    if (decoration.size > 3.3) {
+    if (!stage4cLowFxMode && decoration.size > 3.3) {
       context.strokeStyle = 'rgba(74,112,57,.5)';
       context.lineWidth = 1.2;
       context.beginPath();
@@ -201,8 +237,10 @@ drawBackground = function drawStage4eBackground() {
 
   if (pressure > 0.02) {
     context.fillStyle = `rgba(92,48,76,${0.025 + pressure * 0.09})`;
-    context.fillRect(0, 0, world.width, world.height);
+    context.fillRect(visibleLeft, visibleTop, visibleWidth, visibleHeight);
   }
+
+  context.restore();
 };
 
 const stage4eUpdateHudBase = updateHud;
