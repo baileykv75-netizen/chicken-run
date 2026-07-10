@@ -26,6 +26,16 @@ function stage4e3CauldronDetail() {
   return `🏺 鼎火 ${energy}/${STAGE4C_CAULDRON_GOAL}`;
 }
 
+const stage4e3SkillDefinitionsBase = currentSkillDefinitions;
+currentSkillDefinitions = function currentStage4e3Skills() {
+  const definitions = stage4e3SkillDefinitionsBase();
+  const breakCauldron = definitions.find((skill) => skill.id === 'break-cauldron');
+  if (breakCauldron) {
+    breakCauldron.description = () => '积满 20 点鼎火：普通/迅捷狐狸 +1，蛮力狐狸 +3，救回被抓小鸡额外 +2；满鼎后下一次升级解锁超限二选一';
+  }
+  return definitions;
+};
+
 const stage4e3ChargeCauldronBase = stage4cChargeCauldron;
 stage4cChargeCauldron = function chargeStage4e3Cauldron(amount) {
   const before = Math.floor(player?.cauldronEnergy || 0);
