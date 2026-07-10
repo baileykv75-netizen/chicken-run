@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="./styles/main.css" />
   <link rel="stylesheet" href="./styles/phase4b.css" />
   <link rel="stylesheet" href="./styles/phase4c.css" />
+  <link rel="stylesheet" href="./styles/phase4d.css" />
 </head>
 <body>
   <main id="app">
@@ -25,7 +26,10 @@
           <div id="cauldronPill" class="pill cauldron-pill hidden">🏺 <span id="cauldronEnergy">0/20</span></div>
         </div>
         <div id="timer" class="timer">00:00</div>
-        <button id="pauseButton" class="icon-button" type="button" aria-label="暂停游戏">Ⅱ</button>
+        <div class="hud-actions">
+          <button id="buildButton" class="icon-button" type="button" aria-label="查看当前构筑">📖</button>
+          <button id="pauseButton" class="icon-button" type="button" aria-label="暂停游戏">Ⅱ</button>
+        </div>
       </div>
       <div class="xp-track" aria-label="经验值">
         <div id="xpBar" class="xp-bar"></div>
@@ -64,11 +68,17 @@
         <span>每次升级可刷新一次技能选项</span>
       </div>
       <button id="startButton" class="primary-button" type="button">开始坚持</button>
+      <button id="codexButton" class="secondary-button codex-entry-button" type="button">📖 技能图鉴</button>
       <p id="bestText" class="best-text">最长坚持：尚无纪录</p>
     </section>
 
     <section id="pausePanel" class="panel hidden">
       <h2>已暂停</h2>
+      <div class="pause-build-box">
+        <h3>本局构筑</h3>
+        <div id="pauseBuildList" class="pause-build-list"></div>
+      </div>
+      <button id="pauseCodexButton" class="secondary-button" type="button">查看完整构筑与图鉴</button>
       <button id="resumeButton" class="primary-button" type="button">继续游戏</button>
       <button id="restartFromPauseButton" class="secondary-button" type="button">重新开始</button>
     </section>
@@ -85,6 +95,26 @@
       </div>
     </section>
 
+    <section id="buildPanel" class="panel build-panel hidden">
+      <div class="build-panel-header">
+        <h2>构筑与技能图鉴</h2>
+        <button id="closeBuildButton" class="build-close-button" type="button" aria-label="关闭">×</button>
+      </div>
+      <div id="buildStats" class="build-stats">尚未开始本局</div>
+      <section class="build-section">
+        <h3>本局已获得</h3>
+        <div id="currentBuildList" class="build-skill-grid"></div>
+      </section>
+      <section class="build-section">
+        <h3>已触发组合</h3>
+        <div id="comboList" class="build-skill-grid"></div>
+      </section>
+      <section class="build-section">
+        <h3>已见技能（<span id="codexCount">0</span>）</h3>
+        <div id="codexList" class="build-skill-grid"></div>
+      </section>
+    </section>
+
     <section id="resultPanel" class="panel hidden">
       <div id="resultEmoji" class="result-emoji" aria-hidden="true">🛡️</div>
       <h2 id="resultTitle">本次坚持结束</h2>
@@ -92,6 +122,8 @@
       <p id="resultBest" class="result-best"></p>
       <button id="restartButton" class="primary-button" type="button">再坚持一次</button>
     </section>
+
+    <div id="comboToast" class="combo-toast hidden" aria-live="assertive"></div>
 
     <div id="joystick" class="joystick hidden" aria-hidden="true">
       <div class="joystick-base">
@@ -112,5 +144,7 @@
   <script src="./src/phase4c-balance.js"></script>
   <script src="./src/phase4c-performance.js"></script>
   <script src="./src/phase4c-progression.js"></script>
+  <script src="./src/phase4d-audio.js"></script>
+  <script src="./src/phase4d-ui.js"></script>
 </body>
 </html>
