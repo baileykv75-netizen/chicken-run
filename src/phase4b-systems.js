@@ -101,6 +101,14 @@ function updateCombatChicks(deltaTime) {
     if (!target) continue;
     const direction = normalized(target.x - chick.x, target.y - chick.y);
     damageFox(target, damage, direction, knockback, stun);
+    if (isCultivated && rogueLevel >= 3) {
+      for (const nearby of foxes) {
+        if (nearby === target || nearby.dead || nearby.health <= 0) continue;
+        if ((nearby.x - target.x) ** 2 + (nearby.y - target.y) ** 2 <= 48 ** 2) {
+          damageFox(nearby, damage * 0.42, normalized(nearby.x - target.x, nearby.y - target.y), 8, 0.08);
+        }
+      }
+    }
     addParticles(target.x, target.y, isCultivated ? '🌀' : '✦', 2);
     chick.guardCooldown = cooldown;
   }
