@@ -21,6 +21,13 @@ weaponUpgrades = function stage4eRifleGrowthUpgrades() {
   return upgrades;
 };
 
+function stage4eInsertNearestRifleHit(hits, fox, distance, limit) {
+  let insertAt = hits.length;
+  while (insertAt > 0 && hits[insertAt - 1].distance > distance) insertAt -= 1;
+  hits.splice(insertAt, 0, { fox, distance });
+  if (hits.length > limit) hits.pop();
+}
+
 performRifleAttack = function performStage4eVolleyRifleAttack() {
   const rifleRange = Math.max(390, player.attackRange * 1.35);
   const target = nearestLivingFox(rifleRange);
@@ -30,38 +37,60 @@ performRifleAttack = function performStage4eVolleyRifleAttack() {
   const count = clamp(Math.floor(player.spearCount || 1), 1, 6);
   const volleyDirections = stage4eSpearVolleyDirections(baseDirection, count);
   const rifleDamage = Math.max(25, (player.damageOut + player.damageBack) * 0.84);
+  const maxHits = Math.max(3, player.maxPierce);
+  const previousBatchState = stage4cBatchDamage;
   let hitAny = false;
 
-  for (const volley of volleyDirections) {
-    const endX = player.x + volley.direction.x * rifleRange;
-    const endY = player.y + volley.direction.y * rifleRange;
-    const candidates = foxes
-      .filter((fox) => (
-        !fox.dead &&
-        fox.health > 0 &&
-        pointSegmentDistance(fox.x, fox.y, player.x, player.y, endX, endY) <= fox.radius + 7
-      ))
-      .sort((a, b) => distanceSquared(player, a) - distanceSquared(player, b))
-      .slice(0, Math.max(3, player.maxPierce));
+  stage4cBatchDamage = true;
+  try {
+    for (const volley of volleyDirections) {
+      const endX = player.x + volley.direction.x * rifleRange;
+      const endY = player.y + volley.direction.y * rifleRange;
+      const padding = 26;
+      const minX = Math.min(player.x, endX) - padding;
+      const maxX = Math.max(player.x, endX) + padding;
+      const minY = Math.min(player.y, endY) - padding;
+      const maxY = Math.max(player.y, endY) + padding;
+      const hits = [];
 
-    candidates.forEach((fox, index) => {
-      damageFox(
-        fox,
-        rifleDamage * volley.multiplier * Math.pow(0.91, index),
-        volley.direction,
-        8,
-      );
-      hitAny = true;
-    });
+      for (const fox of foxes) {
+        if (fox.dead || fox.health <= 0) continue;
+        if (fox.x < minX || fox.x > maxX || fox.y < minY || fox.y > maxY) continue;
+        const hitRadius = fox.radius + 7;
+        if (
+          stage4ePointSegmentDistanceSquared(
+            fox.x,
+            fox.y,
+            player.x,
+            player.y,
+            endX,
+            endY,
+          ) > hitRadius * hitRadius
+        ) continue;
+        stage4eInsertNearestRifleHit(hits, fox, distanceSquared(player, fox), maxHits);
+      }
 
-    stage4bGunShots.push({
-      x1: player.x,
-      y1: player.y,
-      x2: endX,
-      y2: endY,
-      life: 0.12,
-      kind: 'rifle',
-    });
+      for (let index = 0; index < hits.length; index += 1) {
+        damageFox(
+          hits[index].fox,
+          rifleDamage * volley.multiplier * Math.pow(0.91, index),
+          volley.direction,
+          8,
+        );
+        hitAny = true;
+      }
+
+      stage4bGunShots.push({
+        x1: player.x,
+        y1: player.y,
+        x2: endX,
+        y2: endY,
+        life: 0.12,
+        kind: 'rifle',
+      });
+    }
+  } finally {
+    stage4cBatchDamage = previousBatchState;
   }
 
   player.spearThrows += 1;
