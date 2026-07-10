@@ -53,6 +53,7 @@ for (const [x, y, angle] of [[14, 67, -.35], [45, 26, .25], [77, 82, -.1], [86, 
   stage4eGrassContext.stroke();
   stage4eGrassContext.restore();
 }
+const stage4eGrassPattern = context.createPattern(stage4eGrassTile, 'repeat');
 
 function stage4eVisibleBounds(margin = 160) {
   const halfWidth = width / (2 * camera.zoom) + margin;
@@ -111,9 +112,8 @@ drawBackground = function drawStage4eBackground() {
   context.fillStyle = gradient;
   context.fillRect(0, 0, world.width, world.height);
 
-  const pattern = context.createPattern(stage4eGrassTile, 'repeat');
-  if (pattern) {
-    context.fillStyle = pattern;
+  if (stage4eGrassPattern) {
+    context.fillStyle = stage4eGrassPattern;
     context.fillRect(0, 0, world.width, world.height);
   }
 
