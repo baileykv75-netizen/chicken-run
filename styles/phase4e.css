@@ -1,0 +1,219 @@
+:root {
+  --danger-pressure: 0;
+  --panel-paper: rgba(255, 249, 226, .985);
+  --panel-edge: #fffdf4;
+  --wood: #8d613e;
+}
+
+.panel {
+  border-color: var(--panel-edge);
+  background:
+    radial-gradient(circle at 12% 8%, rgba(255,255,255,.82), transparent 22%),
+    repeating-linear-gradient(0deg, rgba(131,91,54,.025) 0 1px, transparent 1px 8px),
+    var(--panel-paper);
+  box-shadow:
+    0 20px 46px rgba(73, 48, 29, .25),
+    0 8px 0 rgba(112, 73, 43, .16),
+    inset 0 0 0 2px rgba(222, 191, 129, .2);
+}
+
+.hero-chick {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.hero-chick-image {
+  display: block;
+  width: 76px;
+  height: 76px;
+  filter: drop-shadow(0 8px 5px rgba(81, 54, 31, .18));
+}
+
+.weapon-card {
+  position: relative;
+  overflow: hidden;
+  border-color: #dfc790;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255,255,255,.92), transparent 34%),
+    linear-gradient(180deg, #fffef9, #fff8e6);
+}
+
+.weapon-card::after {
+  content: "";
+  position: absolute;
+  right: -20px;
+  bottom: -26px;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: rgba(239, 173, 76, .09);
+}
+
+.weapon-card.selected {
+  border-color: #e99b39;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(255,255,255,.94), transparent 34%),
+    linear-gradient(180deg, #fff7d6, #ffe9a7);
+  box-shadow: 0 6px 0 rgba(140, 87, 43, .2), 0 0 0 3px rgba(255, 215, 112, .2);
+}
+
+.weapon-card-image {
+  display: block;
+  width: 54px;
+  height: 38px;
+  margin: 0 auto 2px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 3px rgba(73, 48, 29, .18));
+}
+
+.pill,
+.timer,
+.icon-button,
+.sound-button {
+  border-color: rgba(255, 255, 255, .88);
+  background: linear-gradient(180deg, rgba(255,253,242,.98), rgba(255,240,199,.94));
+  box-shadow: 0 4px 0 rgba(95, 58, 32, .19), 0 7px 15px rgba(66, 45, 27, .08);
+}
+
+.danger-pill {
+  background: linear-gradient(180deg, #fff0c5, #ffd29a);
+  box-shadow:
+    0 4px 0 rgba(130, 68, 35, .18),
+    0 0 calc(12px * var(--danger-pressure)) rgba(224, 91, 54, .55);
+}
+
+.xp-track {
+  border-color: rgba(255,255,255,.86);
+  background: rgba(70, 54, 35, .26);
+}
+
+.xp-bar {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, #ffe970, #ffbd4a 62%, #ff9347);
+}
+
+.xp-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(100deg, transparent 18%, rgba(255,255,255,.65) 50%, transparent 82%);
+  animation: stage4eXpShine 2.4s ease-in-out infinite;
+}
+
+@keyframes stage4eXpShine {
+  45%, 100% { transform: translateX(120%); }
+}
+
+.wave-notice {
+  min-width: 220px;
+  padding: 12px 26px;
+  border: 4px solid #fff0c8;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(190,73,47,.97), rgba(132,43,34,.97));
+  box-shadow:
+    0 7px 0 rgba(76, 33, 25, .28),
+    0 12px 26px rgba(83, 29, 22, .24);
+  letter-spacing: .5px;
+  text-shadow: 0 2px 0 rgba(74, 27, 22, .35);
+  animation: stage4eWavePop .58s cubic-bezier(.2,.9,.25,1.18), stage4eWavePulse 1.15s ease-in-out infinite .58s;
+}
+
+.wave-notice::before,
+.wave-notice::after {
+  content: "🐾";
+  position: absolute;
+  top: 50%;
+  font-size: 16px;
+  transform: translateY(-50%) rotate(-18deg);
+}
+
+.wave-notice::before { left: 7px; }
+.wave-notice::after { right: 7px; transform: translateY(-50%) rotate(18deg); }
+
+@keyframes stage4eWavePop {
+  from { opacity: 0; transform: translate(-50%, -18px) scale(.82); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+@keyframes stage4eWavePulse {
+  50% { box-shadow: 0 7px 0 rgba(76,33,25,.28), 0 12px 30px rgba(209,74,45,.38); }
+}
+
+.upgrade-choice {
+  border-color: #ead39d;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255,255,255,.96), transparent 30%),
+    linear-gradient(180deg, #fffef9, #fff8e8);
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.upgrade-choice .upgrade-icon {
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 9px;
+  border: 3px solid rgba(255,255,255,.9);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fff2bd, #ffd77c);
+  box-shadow: 0 4px 0 rgba(115,75,40,.16), inset 0 0 0 2px rgba(139,95,52,.08);
+  line-height: 48px;
+}
+
+.upgrade-choice.rarity-机制 .upgrade-icon,
+.upgrade-choice.rarity-召唤 .upgrade-icon,
+.upgrade-choice.rarity-养成 .upgrade-icon,
+.upgrade-choice.rarity-历练 .upgrade-icon {
+  background: linear-gradient(180deg, #efffdc, #bfe69e);
+}
+
+.upgrade-choice.rarity-世界线 .upgrade-icon,
+.upgrade-choice.rarity-超限 .upgrade-icon {
+  background: linear-gradient(180deg, #f6eaff, #c9a9ef);
+  box-shadow: 0 4px 0 rgba(93,62,137,.18), 0 0 16px rgba(172,121,235,.25);
+}
+
+.combo-toast {
+  border: 3px solid rgba(255,255,255,.9);
+  background: linear-gradient(135deg, #6c4aa7, #b369b8 56%, #e18c71);
+  box-shadow: 0 8px 0 rgba(69,42,91,.22), 0 14px 30px rgba(76,43,91,.25);
+}
+
+.build-section,
+.pause-build-box {
+  border: 2px solid rgba(166, 123, 71, .16);
+  background: rgba(255, 252, 239, .7);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
+}
+
+@media (hover: hover) {
+  .upgrade-choice:hover {
+    transform: translateY(-3px);
+    border-color: #e7af55;
+    box-shadow: 0 8px 0 rgba(116,72,42,.18), 0 14px 24px rgba(76,50,31,.1);
+  }
+}
+
+@media (max-width: 700px) {
+  .hero-chick-image { width: 58px; height: 58px; }
+  .weapon-card-image { width: 44px; height: 32px; }
+  .upgrade-choice .upgrade-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0;
+    line-height: 42px;
+  }
+}
+
+@media (max-width: 430px) {
+  .wave-notice { min-width: 0; padding: 10px 24px; }
+  .weapon-card-image { width: 40px; height: 30px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xp-bar::after,
+  .wave-notice,
+  .hero-chick { animation: none !important; }
+}
