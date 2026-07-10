@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="./styles/phase4b.css" />
   <link rel="stylesheet" href="./styles/phase4c.css" />
   <link rel="stylesheet" href="./styles/phase4d.css" />
+  <link rel="stylesheet" href="./styles/phase4e.css" />
 </head>
 <body>
   <main id="app">
@@ -39,23 +40,25 @@
     <div id="waveNotice" class="wave-notice hidden" aria-live="assertive">⚠ 狐狸潮来袭</div>
 
     <section id="startPanel" class="panel start-panel">
-      <div class="hero-chick" aria-hidden="true">🐥</div>
+      <div class="hero-chick" aria-hidden="true">
+        <img class="hero-chick-image" src="./assets/sprites/chick.svg" alt="" />
+      </div>
       <h1>小鸡快跑</h1>
       <p class="subtitle">选择武器，保护鸡群，看看你能坚持多久！</p>
 
       <div class="weapon-select" id="weaponSelect" aria-label="选择初始武器">
         <button class="weapon-card selected" data-weapon="sword" type="button">
-          <span class="weapon-card-icon">⚔️</span>
+          <span class="weapon-card-icon"><img class="weapon-card-image" src="./assets/sprites/sword.svg" alt="" /></span>
           <strong>长剑</strong>
           <small>高频扇形斩击，每第三击追加剑气</small>
         </button>
         <button class="weapon-card" data-weapon="spear" type="button">
-          <span class="weapon-card-icon">🔱</span>
+          <span class="weapon-card-icon"><img class="weapon-card-image" src="./assets/sprites/spear.svg" alt="" /></span>
           <strong>长枪</strong>
           <small>高速投出与召回，直线穿透并周期突进</small>
         </button>
         <button class="weapon-card" data-weapon="hammer" type="button">
-          <span class="weapon-card-icon">🔨</span>
+          <span class="weapon-card-icon"><img class="weapon-card-image" src="./assets/sprites/hammer.svg" alt="" /></span>
           <strong>大锤</strong>
           <small>抬锤后范围爆发，眩晕并强力击退</small>
         </button>
@@ -147,5 +150,6 @@
   <script src="./src/phase4d-audio.js"></script>
   <script src="./src/phase4d-ui.js"></script>
   <script src="./src/phase4d2-art.js"></script>
+  <script src="./src/phase4e-scene.js"></script>
 </body>
 </html>
