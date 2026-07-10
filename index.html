@@ -8,6 +8,7 @@
   <title>小鸡快跑</title>
   <link rel="stylesheet" href="./styles/main.css" />
   <link rel="stylesheet" href="./styles/phase4b.css" />
+  <link rel="stylesheet" href="./styles/phase4c.css" />
 </head>
 <body>
   <main id="app">
@@ -21,6 +22,7 @@
           <div class="pill level-pill">⭐ Lv.<span id="level">1</span></div>
           <div class="pill danger-pill">⚠ <span id="dangerLevel">1</span></div>
           <div class="pill weapon-pill"><span id="weaponIcon">⚔️</span><span id="weaponName">长剑</span></div>
+          <div id="cauldronPill" class="pill cauldron-pill hidden">🏺 <span id="cauldronEnergy">0/20</span></div>
         </div>
         <div id="timer" class="timer">00:00</div>
         <button id="pauseButton" class="icon-button" type="button" aria-label="暂停游戏">Ⅱ</button>
@@ -41,17 +43,17 @@
         <button class="weapon-card selected" data-weapon="sword" type="button">
           <span class="weapon-card-icon">⚔️</span>
           <strong>长剑</strong>
-          <small>两斩击败普通狐狸，稳定扇形清群</small>
+          <small>高频扇形斩击，每第三击追加剑气</small>
         </button>
         <button class="weapon-card" data-weapon="spear" type="button">
           <span class="weapon-card-icon">🔱</span>
           <strong>长枪</strong>
-          <small>远程双路径穿透，安全但单体较慢</small>
+          <small>高速投出与召回，直线穿透并周期突进</small>
         </button>
         <button class="weapon-card" data-weapon="hammer" type="button">
           <span class="weapon-card-icon">🔨</span>
           <strong>大锤</strong>
-          <small>有抬锤前摇，一击爆发并眩晕</small>
+          <small>抬锤后范围爆发，眩晕并强力击退</small>
         </button>
       </div>
 
@@ -107,5 +109,8 @@
   <script src="./src/phase4b-core.js"></script>
   <script src="./src/phase4b-systems.js"></script>
   <script src="./src/phase4b-guns.js"></script>
+  <script src="./src/phase4c-balance.js"></script>
+  <script src="./src/phase4c-performance.js"></script>
+  <script src="./src/phase4c-progression.js"></script>
 </body>
 </html>
