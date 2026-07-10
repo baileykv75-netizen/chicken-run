@@ -49,10 +49,14 @@ button {
   position: fixed;
   z-index: 10;
   inset: max(12px, env(safe-area-inset-top)) 12px auto;
+  pointer-events: none;
+}
+
+.hud-top {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  pointer-events: none;
 }
 
 .hud-left {
@@ -62,7 +66,8 @@ button {
 
 .pill,
 .timer,
-.icon-button {
+.icon-button,
+.sound-button {
   border: 3px solid rgba(255, 255, 255, 0.76);
   border-radius: 999px;
   background: rgba(255, 248, 222, 0.94);
@@ -89,6 +94,25 @@ button {
   border-radius: 14px;
   pointer-events: auto;
   cursor: pointer;
+}
+
+.xp-track {
+  width: min(380px, 58vw);
+  height: 13px;
+  margin-top: 9px;
+  overflow: hidden;
+  border: 3px solid rgba(255, 255, 255, 0.76);
+  border-radius: 999px;
+  background: rgba(79, 58, 47, 0.22);
+  box-shadow: 0 3px 0 rgba(90, 58, 36, 0.14);
+}
+
+.xp-bar {
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ffe878, #ffae52);
+  transition: width 150ms ease;
 }
 
 .panel {
@@ -159,7 +183,8 @@ button {
 }
 
 .primary-button,
-.secondary-button {
+.secondary-button,
+.upgrade-choice {
   width: 100%;
   padding: 14px 18px;
   border: 0;
@@ -182,9 +207,72 @@ button {
 
 .primary-button:active,
 .secondary-button:active,
-.icon-button:active {
+.icon-button:active,
+.sound-button:active,
+.upgrade-choice:active {
   transform: translateY(3px);
   box-shadow: 0 2px 0 rgba(116, 72, 42, 0.24);
+}
+
+.best-text,
+.result-best {
+  margin: 16px 0 0;
+  font-size: 14px;
+  font-weight: 800;
+  opacity: 0.7;
+}
+
+.upgrade-panel {
+  width: min(760px, calc(100vw - 28px));
+}
+
+.upgrade-star {
+  font-size: 44px;
+  animation: sparkle 1s ease-in-out infinite alternate;
+}
+
+@keyframes sparkle {
+  to {
+    transform: scale(1.15) rotate(8deg);
+  }
+}
+
+.upgrade-choices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.upgrade-choice {
+  min-height: 160px;
+  padding: 16px 12px;
+  border: 3px solid #ffe49b;
+  background: white;
+}
+
+.upgrade-choice:hover {
+  background: #fffaf0;
+  transform: translateY(-2px);
+}
+
+.upgrade-choice .upgrade-icon {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 38px;
+}
+
+.upgrade-choice .upgrade-name {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 18px;
+}
+
+.upgrade-choice .upgrade-description {
+  display: block;
+  font-size: 13px;
+  line-height: 1.45;
+  opacity: 0.7;
 }
 
 .joystick {
@@ -218,7 +306,18 @@ button {
   box-shadow: 0 5px 12px rgba(60, 42, 28, 0.24);
 }
 
-@media (max-width: 620px) {
+.sound-button {
+  position: fixed;
+  z-index: 14;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
   .panel {
     padding: 20px;
   }
@@ -229,6 +328,44 @@ button {
 
   .pill {
     padding: 6px 9px;
+  }
+
+  .level-pill {
+    display: none;
+  }
+
+  .xp-track {
+    width: 54vw;
+  }
+
+  .upgrade-choices {
+    grid-template-columns: 1fr;
+  }
+
+  .upgrade-choice {
+    display: grid;
+    min-height: 96px;
+    grid-template-columns: 54px 1fr;
+    grid-template-rows: auto auto;
+    column-gap: 8px;
+    padding: 10px 14px;
+    text-align: left;
+  }
+
+  .upgrade-choice .upgrade-icon {
+    grid-row: 1 / 3;
+    align-self: center;
+    margin: 0;
+    text-align: center;
+  }
+
+  .upgrade-choice .upgrade-name {
+    align-self: end;
+    margin: 0;
+  }
+
+  .upgrade-choice .upgrade-description {
+    align-self: start;
   }
 }
 
