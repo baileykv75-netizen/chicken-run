@@ -1,0 +1,30 @@
+.upgrade-choice.rarity-超限 {
+  border-color: #ffb45f;
+  background: linear-gradient(180deg, #fffaf0, #ffe8bd);
+  box-shadow: 0 5px 0 rgba(177,92,24,.2), inset 0 0 0 2px rgba(255,255,255,.72);
+}
+
+.upgrade-choice.rarity-超限 .upgrade-rarity {
+  background: #ffcf86;
+  color: #7a3c13;
+  opacity: 1;
+}
+
+.cauldron-pill {
+  border-color: rgba(255,191,92,.85);
+  background: rgba(255,242,205,.96);
+}
+
+@media (max-width: 700px) {
+  .cauldron-pill {
+    max-width: 92px;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 430px) {
+  .cauldron-pill {
+    display: none;
+  }
+}
