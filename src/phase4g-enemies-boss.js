@@ -199,8 +199,10 @@ function phase4gUpdateElite(fox, dt) {
     }
     if (fox.phase4gMode === 'dash') {
       const step = fox.speed * 3.1 * dt;
-      const moved = phase4jMoveEntity(fox,
-        fox.x + fox.phase4gFacing.x * step, fox.y + fox.phase4gFacing.y * step, fox.radius || 15);
+      const targetX = fox.x + fox.phase4gFacing.x * step;
+      const targetY = fox.y + fox.phase4gFacing.y * step;
+      const moved = phase4jLineClear(fox.x, fox.y, targetX, targetY, fox.radius || 15)
+        && phase4jMoveEntity(fox, targetX, targetY, fox.radius || 15);
       if (!moved) { fox.phase4gMode = 'recover'; fox.phase4gClock = 0; }
       else phase4gDashHit(fox, 13, true);
       if (fox.phase4gClock >= 0.44) {
@@ -261,8 +263,10 @@ function phase4gUpdateBoss(fox, dt) {
     }
   } else if (fox.phase4gMode === 'charge') {
     const step = fox.speed * (enraged ? 4.0 : 3.3) * dt;
-    const moved = phase4jMoveEntity(fox,
-      fox.x + fox.phase4gFacing.x * step, fox.y + fox.phase4gFacing.y * step, fox.radius || 35);
+    const targetX = fox.x + fox.phase4gFacing.x * step;
+    const targetY = fox.y + fox.phase4gFacing.y * step;
+    const moved = phase4jLineClear(fox.x, fox.y, targetX, targetY, fox.radius || 35)
+      && phase4jMoveEntity(fox, targetX, targetY, fox.radius || 35);
     if (!moved) { fox.phase4gMode = 'recover'; fox.phase4gClock = 0; }
     else phase4gDashHit(fox, enraged ? 22 : 17, true);
     if (fox.phase4gClock >= 0.65) {
