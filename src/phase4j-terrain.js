@@ -259,3 +259,47 @@ drawFox=function drawPhase4jConcealedFox(fox){
   phase4jFoxDrawBase(fox);
   context.restore();
 };
+
+function phase4jLineClear(x1,y1,x2,y2,r=5) {
+  const dist=Math.hypot(x2-x1,y2-y1);
+  const steps=Math.max(1,Math.ceil(dist/16));
+  for(let i=1;i<=steps;i++) {
+    const t=i/steps;
+    if(!phase4jClear(x1+(x2-x1)*t,y1+(y2-y1)*t,r))return false;
+  }
+  return true;
+}
+// Prevent attacks on foxes through solid rock/logs. This is deliberately shared
+// by all weapons to avoid inconsistent gun/spear piercing behavior in 4J.
+const phase4jDamageFoxBase=damageFox;
+damageFox=function damagePhase4jFox(fox,damage,direction,knockback,stun=0) {
+  if (player && !phase4jLineClear(player.x,player.y,fox.x,fox.y,5))return;
+  const startX=fox.x,startY=fox.y;
+  phase4jDamageFoxBase(fox,damage,direction,knockback,stun);
+  if(fox.dead)return;
+  const nx=fox.x,ny=fox.y;
+  fox.x=startX;fox.y=startY;
+  phase4jMoveEntity(fox,nx,ny,fox.radius||14);
+};
+// Knockback from older skills should not strand the player or chicks inside a rock.
+const phase4jUpdateBase=update;
+update=function updatePhase4jTerrain(dt) {
+  const px=player?.x,py=player?.y;
+  const recorded=new Map();
+  for(const chick of chicks)recorded.set(chick,[chick.x,chick.y]);
+  phase4jUpdateBase(dt);
+  if(state!=='playing' || !player)return;
+  if(!phase4jClear(player.x,player.y,player.radius||18) && Number.isFinite(px+py)){
+    const nx=player.x,ny=player.y;
+    player.x=px;player.y=py;
+    phase4jMoveEntity(player,nx,ny,player.radius||18);
+  }
+  for(const chick of chicks){
+    if(chick.lost||chick.carriedBy||phase4jClear(chick.x,chick.y,chick.radius||10))continue;
+    const before=recorded.get(chick);
+    if(!before)continue;
+    const nx=chick.x,ny=chick.y;
+    chick.x=before[0];chick.y=before[1];
+    phase4jMoveEntity(chick,nx,ny,chick.radius||10);
+  }
+};
