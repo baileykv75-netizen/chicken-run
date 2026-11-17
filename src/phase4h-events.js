@@ -85,8 +85,9 @@ function phase4hSpawn() {
       finally { phase4g.suppressElite = false; }
       if (!made || foxes.length === old) break;
       const fox = foxes[foxes.length - 1];
-      fox.x = clamp(event.x + Math.cos(i * Math.PI) * 65, 20, world.width - 20);
-      fox.y = clamp(event.y + Math.sin(i * Math.PI) * 65, 20, world.height - 20);
+      const clear = phase4jFindObjective(event.x + Math.cos(i * Math.PI) * 65,
+        event.y + Math.sin(i * Math.PI) * 65, fox.radius || 18);
+      fox.x = clear.x; fox.y = clear.y;
       fox.phase4hGuard = true;
       event.guards.push(fox);
     }
@@ -344,8 +345,9 @@ function phase4hSpawnChestGuards(event) {
       if (!spawnFox(i === 0 ? 'swift' : 'brute') || foxes.length <= before) break;
       const fox = foxes[foxes.length - 1];
       const a = i * Math.PI + Math.PI / 4;
-      fox.x = clamp(event.x + Math.cos(a) * 100, 20, world.width - 20);
-      fox.y = clamp(event.y + Math.sin(a) * 100, 20, world.height - 20);
+      const clear = phase4jFindObjective(event.x + Math.cos(a) * 100,
+        event.y + Math.sin(a) * 100, fox.radius || 18);
+      fox.x = clear.x; fox.y = clear.y;
     }
   } finally { phase4g.suppressElite = false; }
 }
