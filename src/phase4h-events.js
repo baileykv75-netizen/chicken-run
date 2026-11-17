@@ -10,7 +10,7 @@ const PHASE4H_TYPES = Object.freeze([
 let phase4h = null;
 function phase4hReset() {
   phase4h = {
-    nextAt: 45, event: null, serial: 0, nextChickId: 10,
+    nextAt: 45, event: null, serial: 0, bag: [], nextChickId: 10,
     notice: '', noticeFor: 0, lastHud: '', state: 'idle', stats: { success: 0, expired: 0 },
   };
 }
@@ -21,6 +21,17 @@ function phase4hBossActive() {
 }
 function phase4hActive() {
   return Boolean(phase4h?.event && phase4h.event.status === 'active');
+}
+function phase4hNextType() {
+  if (!phase4h.bag.length) {
+    phase4h.bag = [...PHASE4H_TYPES];
+    // Shuffle without replacement: each set of five contains all event types.
+    for (let i = phase4h.bag.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [phase4h.bag[i], phase4h.bag[j]] = [phase4h.bag[j], phase4h.bag[i]];
+    }
+  }
+  return phase4h.bag.pop();
 }
 function phase4hLocation() {
   // Clamp to the world while remaining reachable from the player in ~2 seconds.
@@ -41,8 +52,8 @@ function phase4hNotify(message, seconds = 2.7) {
 }
 function phase4hSpawn() {
   if (!player || phase4hBossActive() || phase4hActive()) return;
-  const type = PHASE4H_TYPES[phase4h.serial % PHASE4H_TYPES.length];
-  phase4h.serial += 1; // Rotating ensures all five events appear in a long run.
+  const type = phase4hNextType();
+  phase4h.serial += 1;
   const pos = phase4hLocation();
   const event = { ...type, ...pos, remaining: type.duration, status: 'active',
     option: null, progress: 0, goal: 0, target: null, touched: false };
@@ -68,6 +79,7 @@ function phase4hSpawn() {
     if (foxes.length >= currentFoxLimit()) {
       phase4h.event = null;
       phase4h.serial -= 1;
+      phase4h.bag.push(type);
       phase4h.nextAt = elapsed + 8; // Retry the same type without sacrificing enemies.
       return;
     }
@@ -336,7 +348,7 @@ updateHud = function updatePhase4hHud(force = false) {
   const distance = Math.round(phase4hDistance(e));
   const extra = e.id === 'shelter' ? ' · 驻守 ' + Math.floor(e.progress) + '/6秒' :
     e.id === 'chest' && e.option === 'risk' ? ' · 挑战 ' + Math.floor(e.progress) + '/10秒' : '';
-  const next = e.icon + ' ' + e.name + ' ' + arrow + ' ' + distance + '米 · ' + Math.ceil(e.remaining) + '秒' + extra;
+  const next = e.icon + ' ' + e.name + ' ' + arrow + ' ' + distance + '步 · ' + Math.ceil(e.remaining) + '秒' + extra;
   if (next !== phase4h.lastHud) {
     phase4hHud.textContent = next;
     phase4h.lastHud = next;
