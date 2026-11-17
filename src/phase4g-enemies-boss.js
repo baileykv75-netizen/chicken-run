@@ -64,8 +64,9 @@ function phase4gSpawnMinions(count, center) {
       if (!spawnFox(i % 3 === 0 ? 'swift' : 'normal')) break;
       const fox = foxes[foxes.length - 1];
       const angle = (i / Math.max(1, count)) * Math.PI * 2;
-      fox.x = clamp(center.x + Math.cos(angle) * 105, 24, world.width-24);
-      fox.y = clamp(center.y + Math.sin(angle) * 105, 24, world.height-24);
+      const clear = phase4jFindObjective(center.x + Math.cos(angle) * 105,
+        center.y + Math.sin(angle) * 105, fox.radius || 20);
+      fox.x = clear.x; fox.y = clear.y;
     }
   } finally { phase4g.suppressElite = false; }
 }
@@ -87,6 +88,8 @@ function phase4gSpawnBoss() {
   fox.phase4gCooldown = 2.2;
   fox.phase4gFacing = { x: 1, y: 0 };
   fox.radius = 35;
+  const clearBoss = phase4jFindObjective(fox.x, fox.y, fox.radius + 4);
+  fox.x = clearBoss.x; fox.y = clearBoss.y;
   fox.speed = 92 + Math.min(24, phase4g.bossNumber * 4);
   fox.phase4gBaseSpeed = fox.speed;
   const hp = 720 + phase4g.bossNumber * 175 + dangerLevel * 22;
