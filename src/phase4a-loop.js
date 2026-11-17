@@ -39,8 +39,7 @@ updateChicks = function updateFollowerOnlyChicks(deltaTime) {
       velocityY = (velocityY / speed) * maxSpeed;
     }
 
-    chick.x = clamp(chick.x + velocityX * deltaTime, 14, world.width - 14);
-    chick.y = clamp(chick.y + velocityY * deltaTime, 14, world.height - 14);
+    phase4jMoveEntity(chick, chick.x + velocityX * deltaTime, chick.y + velocityY * deltaTime, chick.radius || 10);
   }
 };
 
@@ -83,10 +82,10 @@ updateFoxes = function updateBalancedFoxes(deltaTime) {
       targetY = target.y;
     }
 
-    const direction = normalized(targetX - fox.x, targetY - fox.y);
+    const direction = phase4jSteer(fox, targetX, targetY);
     const carryingMultiplier = fox.carrying ? 1.08 : 1;
-    fox.x += direction.x * fox.speed * carryingMultiplier * deltaTime;
-    fox.y += direction.y * fox.speed * carryingMultiplier * deltaTime;
+    const speed = fox.speed * carryingMultiplier * deltaTime;
+    phase4jMoveEntity(fox, fox.x + direction.x * speed, fox.y + direction.y * speed, fox.radius || 14);
 
     if (
       !fox.carrying &&
@@ -130,16 +129,10 @@ update = function updateEndlessGame(deltaTime) {
 
   const movement = getMovementInput();
   const hammerMoveMultiplier = player.hammerWindup > 0 ? 0.55 : 1;
-  player.x = clamp(
+  phase4jMoveEntity(player,
     player.x + movement.x * player.speed * hammerMoveMultiplier * deltaTime,
-    18,
-    world.width - 18,
-  );
-  player.y = clamp(
     player.y + movement.y * player.speed * hammerMoveMultiplier * deltaTime,
-    18,
-    world.height - 18,
-  );
+    player.radius || 18);
 
   if (player.hammerWindup > 0) {
     player.hammerWindup -= deltaTime;
