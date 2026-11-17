@@ -67,7 +67,8 @@ function phase4hSpawn() {
   } else if (type.id === 'thief') {
     if (foxes.length >= currentFoxLimit()) {
       phase4h.event = null;
-      phase4h.nextAt = elapsed + 8; // Retry; don't sacrifice another enemy.
+      phase4h.serial -= 1;
+      phase4h.nextAt = elapsed + 8; // Retry the same type without sacrificing enemies.
       return;
     }
     const old = foxes.length;
@@ -77,6 +78,7 @@ function phase4hSpawn() {
     finally { phase4g.suppressElite = false; }
     if (!made || foxes.length === old) {
       phase4h.event = null;
+      phase4h.serial -= 1;
       phase4h.nextAt = elapsed + 8;
       return;
     }
@@ -297,8 +299,28 @@ phase4hChoices.addEventListener('click', ev => {
   e.option = button.dataset.choice;
   phase4hChoices.classList.add('hidden');
   if (e.option === 'safe') phase4hReward(e, 'safe');
-  else phase4hNotify('宝箱挑战：在宝箱附近坚持10秒', 2.5);
+  else {
+    // A risk selection produces a real, bounded challenge, not free idle XP.
+    phase4hSpawnChestGuards(e);
+    phase4hNotify('宝箱挑战：迎击狐狸并在附近坚持10秒', 2.5);
+  }
 });
+function phase4hSpawnChestGuards(event) {
+  if (!event || event.id !== 'chest') return;
+  const spare = Math.max(0, currentFoxLimit() - foxes.length);
+  const count = Math.min(2, spare);
+  phase4g.suppressElite = true;
+  try {
+    for (let i = 0; i < count; i++) {
+      const before = foxes.length;
+      if (!spawnFox(i === 0 ? 'swift' : 'brute') || foxes.length <= before) break;
+      const fox = foxes[foxes.length - 1];
+      const a = i * Math.PI + Math.PI / 4;
+      fox.x = clamp(event.x + Math.cos(a) * 100, 20, world.width - 20);
+      fox.y = clamp(event.y + Math.sin(a) * 100, 20, world.height - 20);
+    }
+  } finally { phase4g.suppressElite = false; }
+}
 const phase4hHudBase = updateHud;
 updateHud = function updatePhase4hHud(force = false) {
   phase4hHudBase(force);
