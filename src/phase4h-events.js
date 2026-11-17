@@ -56,7 +56,7 @@ function phase4hSpawn() {
   phase4h.serial += 1;
   const pos = phase4hLocation();
   const event = { ...type, ...pos, remaining: type.duration, status: 'active',
-    option: null, progress: 0, goal: 0, target: null, touched: false };
+    option: null, progress: 0, goal: 0, guards: [], target: null, touched: false };
   phase4h.event = event;
   phase4h.state = 'active';
   if (type.id === 'supply') {
@@ -74,6 +74,7 @@ function phase4hSpawn() {
       fox.x = clamp(event.x + Math.cos(i * Math.PI) * 65, 20, world.width - 20);
       fox.y = clamp(event.y + Math.sin(i * Math.PI) * 65, 20, world.height - 20);
       fox.phase4hGuard = true;
+      event.guards.push(fox);
     }
   } else if (type.id === 'thief') {
     if (foxes.length >= currentFoxLimit()) {
@@ -210,7 +211,8 @@ function phase4hUpdate(dt) {
       if (fox.dead || fox.health <= 0) continue;
       if ((fox.x-e.x)**2 + (fox.y-e.y)**2 <= 125**2) enemies++;
     }
-    if (enemies === 0) phase4hReward(e);
+    // Guards must actually be defeated; leading them away is not enough.
+    if (enemies === 0 && e.guards.every(fox => fox.dead || fox.health <= 0)) phase4hReward(e);
   } else if (e.id === 'shelter') {
     // Temporary safe zone, but only while the chicks actually occupy it.
     let sheltered = 0;
