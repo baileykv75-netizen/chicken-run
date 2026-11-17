@@ -3,10 +3,8 @@
 const PHASE4I = Object.freeze({
   startingChicks: 1,
   maxChicks: 10,
-  firstChickProtection: 40, // A small grace period while the player learns to escort.
   firstHatchLevel: 3,
   hatchEveryLevels: 3,
-  newChickProtection: 3,
 });
 let phase4i = { nextHatchLevel: PHASE4I.firstHatchLevel, hatched: 0 };
 
@@ -18,7 +16,8 @@ function phase4iHatch() {
   // Reuse the existing 4H chick factory to keep identity, physics and
   // existing awakening/cultivation interactions consistent.
   const chick = phase4hCreateChick();
-  chick.protectedFor = Math.max(chick.protectedFor || 0, PHASE4I.newChickProtection);
+  // No extra Phase 4I protection: normal capture and weapon reach apply.
+  chick.protectedFor = 0;
   chick.phase4iHatched = true;
   chicks.push(chick);
   phase4i.hatched += 1;
@@ -38,7 +37,7 @@ resetGame = function resetPhase4iGame() {
   if (first) {
     first.x = clamp(player.x + 36, 14, world.width - 14);
     first.y = clamp(player.y + 28, 14, world.height - 14);
-    first.protectedFor = PHASE4I.firstChickProtection;
+    first.protectedFor = 0;
   }
   updateHud();
 };
