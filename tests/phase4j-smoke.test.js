@@ -58,4 +58,25 @@ go('phase4j.solids=[{kind:"rock",x:1400,y:900,r:55}]');
 const objective=go('phase4jFindObjective(1400,900,35)');
 context.objective=objective;
 assert.equal(go('phase4jClear(objective.x,objective.y,35)'),true,'event objectives must be placed safely');
-console.log('Phase 4J tests passed: generator, topology, collision, projectile cover, mud, objectives.');
+// Both round and elongated barriers must be navigable rather than only solid.
+go('phase4j.mud=[]');
+for(const obstacle of [
+  {kind:'rock',x:700,y:700,r:42},
+  {kind:'log',ax:700,ay:620,bx:700,by:780,r:13},
+]){
+  context.blocker=obstacle;
+  const dist=go(`phase4j.solids=[blocker];
+    const follower={x:600,y:700,radius:14};
+    let closest=999;
+    for(let step=0;step<350;step++){
+      const direction=phase4jSteer(follower,850,700);
+      phase4jMoveEntity(follower,
+        follower.x+direction.x*2.1,follower.y+direction.y*2.1,14);
+      if(!phase4jClear(follower.x,follower.y,14))
+        throw Error('clipped a ' + blocker.kind);
+      closest=Math.min(closest,Math.hypot(850-follower.x,700-follower.y));
+    }
+    closest;`);
+  assert.ok(dist<24,'fox must route around '+obstacle.kind+' without clipping');
+}
+console.log('Phase 4J tests passed: topology, collision, mud, LOS, objectives, rock and log routing.');
