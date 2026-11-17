@@ -86,6 +86,14 @@ function phase4iUpdateEgg(dt) {
   if (!player || state !== 'playing') return;
   const egg = phase4i.egg;
   if (!egg) {
+    // Avoid spawning another objective during an active event or boss fight.
+    const busyWithEvent = typeof phase4hActive === 'function' && phase4hActive();
+    const busyWithBoss = typeof phase4gAlive === 'function'
+      && typeof phase4g !== 'undefined' && phase4gAlive(phase4g?.boss);
+    if (busyWithEvent || busyWithBoss) {
+      phase4i.nextEggAt += dt;
+      return;
+    }
     if (phase4iLivingCount() >= PHASE4I.maxChicks) {
       // Do not queue eggs while already full.
       phase4i.nextEggAt = Math.max(phase4i.nextEggAt, elapsed + dt);
