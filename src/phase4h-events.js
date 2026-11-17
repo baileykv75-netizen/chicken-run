@@ -54,7 +54,11 @@ function phase4hSpawn() {
     event.goal = Math.min(event.goal, Math.max(0, currentFoxLimit() - foxes.length));
     for (let i = 0; i < event.goal; i++) {
       const old = foxes.length;
-      if (!spawnFox(i ? 'swift' : 'normal') || foxes.length === old) break;
+      phase4g.suppressElite = true;
+      let made;
+      try { made = spawnFox(i ? 'swift' : 'normal'); }
+      finally { phase4g.suppressElite = false; }
+      if (!made || foxes.length === old) break;
       const fox = foxes[foxes.length - 1];
       fox.x = clamp(event.x + Math.cos(i * Math.PI) * 65, 20, world.width - 20);
       fox.y = clamp(event.y + Math.sin(i * Math.PI) * 65, 20, world.height - 20);
@@ -67,7 +71,11 @@ function phase4hSpawn() {
       return;
     }
     const old = foxes.length;
-    if (!spawnFox('swift') || foxes.length === old) {
+    phase4g.suppressElite = true;
+    let made;
+    try { made = spawnFox('swift'); }
+    finally { phase4g.suppressElite = false; }
+    if (!made || foxes.length === old) {
       phase4h.event = null;
       phase4h.nextAt = elapsed + 8;
       return;
@@ -216,6 +224,16 @@ function phase4hUpdate(dt) {
     phase4hChoices.classList.add('hidden');
   }
 }
+// An optional event is allowed to finish before the next scheduled boss.
+// Postponement avoids forcing a boss on top of an unfinished escort objective.
+const phase4hBossSpawnBase = phase4gSpawnBoss;
+phase4gSpawnBoss = function spawnPhase4hDeferredBoss() {
+  if (phase4hActive()) {
+    phase4g.nextBossAt = elapsed + Math.min(12, Math.max(3, phase4h.event.remaining + 2));
+    return;
+  }
+  return phase4hBossSpawnBase();
+};
 const phase4hDefeatBase = defeatFox;
 defeatFox = function defeatPhase4hFox(fox) {
   const event = phase4h?.event;
