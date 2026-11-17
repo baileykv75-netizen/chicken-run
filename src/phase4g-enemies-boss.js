@@ -127,12 +127,11 @@ function phase4gGrabChick(fox) {
   addParticles(fox.x, fox.y, '!', 2);
 }
 function phase4gMove(fox, x, y, seconds, speedScale = 1) {
-  const dir = normalized(x - fox.x, y - fox.y);
+  const dir = phase4jSteer(fox, x, y);
   fox.phase4gFacing = dir;
   const distance = Math.hypot(x - fox.x, y - fox.y);
   const move = Math.min(distance, fox.speed * speedScale * seconds);
-  fox.x = clamp(fox.x + dir.x * move, 14, world.width - 14);
-  fox.y = clamp(fox.y + dir.y * move, 14, world.height - 14);
+  phase4jMoveEntity(fox, fox.x + dir.x * move, fox.y + dir.y * move, fox.radius || 14);
 }
 function phase4gDashHit(fox, damage, knockChicks = false) {
   if ((player.x - fox.x) ** 2 + (player.y - fox.y) ** 2 < (fox.radius + player.radius + 7) ** 2) {
@@ -197,9 +196,10 @@ function phase4gUpdateElite(fox, dt) {
     }
     if (fox.phase4gMode === 'dash') {
       const step = fox.speed * 3.1 * dt;
-      fox.x = clamp(fox.x + fox.phase4gFacing.x * step, 15, world.width - 15);
-      fox.y = clamp(fox.y + fox.phase4gFacing.y * step, 15, world.height - 15);
-      phase4gDashHit(fox, 13, true);
+      const moved = phase4jMoveEntity(fox,
+        fox.x + fox.phase4gFacing.x * step, fox.y + fox.phase4gFacing.y * step, fox.radius || 15);
+      if (!moved) { fox.phase4gMode = 'recover'; fox.phase4gClock = 0; }
+      else phase4gDashHit(fox, 13, true);
       if (fox.phase4gClock >= 0.44) {
         fox.phase4gMode = 'recover'; fox.phase4gClock = 0;
       }
@@ -258,9 +258,10 @@ function phase4gUpdateBoss(fox, dt) {
     }
   } else if (fox.phase4gMode === 'charge') {
     const step = fox.speed * (enraged ? 4.0 : 3.3) * dt;
-    fox.x = clamp(fox.x + fox.phase4gFacing.x * step, 35, world.width - 35);
-    fox.y = clamp(fox.y + fox.phase4gFacing.y * step, 35, world.height - 35);
-    phase4gDashHit(fox, enraged ? 22 : 17, true);
+    const moved = phase4jMoveEntity(fox,
+      fox.x + fox.phase4gFacing.x * step, fox.y + fox.phase4gFacing.y * step, fox.radius || 35);
+    if (!moved) { fox.phase4gMode = 'recover'; fox.phase4gClock = 0; }
+    else phase4gDashHit(fox, enraged ? 22 : 17, true);
     if (fox.phase4gClock >= 0.65) {
       fox.phase4gMode = 'recover'; fox.phase4gClock = 0;
     }
