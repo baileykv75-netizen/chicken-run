@@ -115,8 +115,8 @@ function phase4gDamagePlayer(amount, fox) {
   player.invulnerableFor = 0.72;
   cameraShake = Math.max(cameraShake, 6);
   const direction = normalized(player.x - fox.x, player.y - fox.y);
-  player.x = clamp(player.x + direction.x * 24, 18, world.width - 18);
-  player.y = clamp(player.y + direction.y * 24, 18, world.height - 18);
+  phase4jMoveEntity(player, player.x + direction.x * 24,
+    player.y + direction.y * 24, player.radius || 18);
   if (player.health <= 0) finishGame();
 }
 function phase4gGrabChick(fox) {
@@ -145,8 +145,8 @@ function phase4gDashHit(fox, damage, knockChicks = false) {
       if (chick.lost || chick.carriedBy || chick.protectedFor > 0) continue;
       if ((chick.x - fox.x) ** 2 + (chick.y - fox.y) ** 2 > (fox.radius + chick.radius + 8) ** 2) continue;
       const direction = normalized(chick.x - fox.x, chick.y - fox.y);
-      chick.x = clamp(chick.x + direction.x * 55, 14, world.width - 14);
-      chick.y = clamp(chick.y + direction.y * 55, 14, world.height - 14);
+      phase4jMoveEntity(chick, chick.x + direction.x * 55,
+        chick.y + direction.y * 55, chick.radius || 10);
       chick.protectedFor = 0.45;
     }
   }
