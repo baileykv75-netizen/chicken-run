@@ -34,7 +34,11 @@ function phase4hNextType() {
   const critical = typeof phase4fSafety === 'function' && phase4fSafety().inDanger;
   const hard = typeof phase4f !== 'undefined' && phase4f?.phase === 'hard';
   let index = -1;
-  if (critical) index = phase4h.bag.findIndex(item => item.id === 'supply');
+  // The first 4I event is a guaranteed rescue, so the initial chick can
+  // grow a flock before the wider random event rotation begins.
+  if (phase4h.serial === 0) index = phase4h.bag.findIndex(item => item.id === 'lost');
+  else if (critical) index = phase4h.bag.findIndex(item => item.id === 'supply');
+  else if (phase4hAliveChicks() < 3) index = phase4h.bag.findIndex(item => item.id === 'lost');
   else if (hard) {
     const safer = phase4h.bag.map((item,i) =>
       ['supply','shelter','lost'].includes(item.id) ? i : -1).filter(i => i>=0);
