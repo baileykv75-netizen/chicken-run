@@ -117,8 +117,9 @@ updateFoxes = function updateBalancedFoxes(deltaTime) {
       player.invulnerableFor = 0.72;
       cameraShake = fox.type === 'brute' ? 10 : 7;
       const knockback = normalized(player.x - fox.x, player.y - fox.y);
-      player.x += knockback.x * (fox.type === 'brute' ? 36 : 25);
-      player.y += knockback.y * (fox.type === 'brute' ? 36 : 25);
+      const knockDistance = fox.type === 'brute' ? 36 : 25;
+      phase4jMoveEntity(player, player.x + knockback.x * knockDistance,
+        player.y + knockback.y * knockDistance, player.radius || 18);
       playTone(120, 0.1, 0.055, 'sawtooth');
       if (player.health <= 0) {
         finishGame();
