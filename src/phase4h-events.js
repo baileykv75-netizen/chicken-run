@@ -286,8 +286,8 @@ updateFoxes = function updatePhase4hFoxes(dt) {
     if (thief.stunnedFor <= 0) {
       const edge = nearestWorldEdgeVector(thief.x, thief.y);
       const speed = 115 * dt;
-      thief.x = clamp(thief.x + edge.x * speed, 8, world.width - 8);
-      thief.y = clamp(thief.y + edge.y * speed, 8, world.height - 8);
+      const route = phase4jSteer(thief, thief.x + edge.x * 170, thief.y + edge.y * 170);
+      phase4jMoveEntity(thief, thief.x + route.x * speed, thief.y + route.y * speed, thief.radius || 12);
     }
     if (thief.x <= 9 || thief.x >= world.width - 9 || thief.y <= 9 || thief.y >= world.height - 9) {
       phase4hExpire('狐狸带着宝物逃跑了');
