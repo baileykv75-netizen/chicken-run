@@ -131,7 +131,7 @@ function phase4hCreateChick() {
   return {
     id: phase4h.nextChickId++, x: player.x + Math.cos(a) * 28,
     y: player.y + Math.sin(a) * 28, radius: 10, phase: Math.random() * Math.PI * 2,
-    wanderAngle: a, carriedBy: null, lost: false, protectedFor: 3,
+    wanderAngle: a, carriedBy: null, lost: false, protectedFor: 0,
   };
 }
 function phase4hReward(event, choice = '') {
