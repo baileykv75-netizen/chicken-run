@@ -69,7 +69,7 @@ function phase4fMeasure() {
       + 0.2 * clamp((totalAge / Math.max(1, living)) / 8, 0, 1)), 0, 100);
   const chickPressure = clamp(
     phase4f.lost * 36 + phase4f.grabs * 17
-    + (CONFIG.chickCount - alive) * 7, 0, 100);
+    + Math.max(0, chicks.length - alive) * 7, 0, 100);
   const healthPressure = clamp(
     phase4f.damage / Math.max(1, player.maxHealth) * 250
     + (1 - player.health / Math.max(1, player.maxHealth)) * 42, 0, 100);
@@ -90,7 +90,10 @@ function phase4fMeasure() {
 function phase4fSafety() {
   const healthRatio = player.health / Math.max(1, player.maxHealth);
   const liveChicks = chicks.filter(chick => !chick.lost).length;
-  const inDanger = healthRatio < 0.25 || liveChicks <= 3;
+  // A newly grown group is not automatically critical just for being small.
+  // Only classify flock attrition after enough chicks have joined.
+  const criticalFlock = chicks.length >= 6 && liveChicks <= Math.ceil(chicks.length * 0.3);
+  const inDanger = healthRatio < 0.25 || liveChicks === 0 || criticalFlock;
   return { inDanger, healthRatio, liveChicks };
 }
 
