@@ -13,11 +13,13 @@ const node = () => ({ className:'',classList:{add(){},remove(){},toggle(){}},
 let id = 10;
 const scene = {
   CONFIG:{chickCount:10}, world:{width:2500,height:1700},
-  elapsed:0,player:null,chicks:[],state:'playing',
+  elapsed:0,player:null,chicks:[],state:'playing',eventActive:false,
   document:{createElement:node,querySelector:()=>({appendChild(){}})},
   clamp:(v,a,b)=>Math.max(a,Math.min(b,v)),
   phase4hCreateChick:()=>({id:id++,x:1100,y:850,protectedFor:0,lost:false,carriedBy:null}),
-  phase4hNotify(){},addParticles(){},playTone(){},
+  phase4hNotify(){},phase4hActive:()=>scene.eventActive,
+  phase4g:{boss:null},phase4gAlive:(f)=>!!f&&!f.dead&&f.health>0,
+  addParticles(){},playTone(){},
   update(){},updateHud(){},drawWorld(){},context:{save(){},restore(){},translate(){},rotate(){},fill(){},stroke(){},
     beginPath(){},arc(){},ellipse(){},fillText(){},scale(){}},
 };
@@ -42,8 +44,13 @@ scene.player.level=20;scene.update(0.016);
 assert.equal(count(),1,'leveling alone must not hatch chicks');
 assert.equal(timer(),75,'first egg arrives after 75 game seconds');
 scene.elapsed=75;
-scene.update(.016);
-assert.equal(egg().status,'ground','egg appears on schedule');
+scene.eventActive=true;scene.update(.016);
+assert.equal(egg(),null,'active random event defers egg spawn');
+scene.eventActive=false;
+scene.phase4g.boss={health:50,dead:false};scene.update(.016);
+assert.equal(egg(),null,'boss battle defers egg spawn');
+scene.phase4g.boss=null;scene.elapsed=76;scene.update(.016);
+assert.equal(egg().status,'ground','egg appears once other objectives end');
 const ground=egg();
 scene.chicks[0].x=ground.x;scene.chicks[0].y=ground.y;
 scene.update(.016);
