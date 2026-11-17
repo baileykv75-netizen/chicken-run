@@ -62,20 +62,60 @@ function phase4jMoveEntity(entity, nextX,nextY,r=14) {
 function phase4jSteer(entity,tx,ty) {
   const dx=tx-entity.x,dy=ty-entity.y,d=Math.hypot(dx,dy);
   if(d<1)return{x:0,y:0};
-  const heading=Math.atan2(dy,dx),r=entity.radius||14;
-  const step=Math.min(85,Math.max(40,d));
-  const direct={x:Math.cos(heading),y:Math.sin(heading)};
-  if(phase4jClear(entity.x+direct.x*step,entity.y+direct.y*step,r+3))return direct;
-  // Consider both sides and favor a tangent that continues making progress.
-  let best=null,bestScore=-Infinity;
-  for(const offset of [0,.42,-.42,.85,-.85,1.25,-1.25,1.7,-1.7,2.15,-2.15,Math.PI]){
-    const a=heading+offset,v={x:Math.cos(a),y:Math.sin(a)};
-    if(!phase4jClear(entity.x+v.x*step,entity.y+v.y*step,r+3))continue;
-    const score=v.x*direct.x+v.y*direct.y
-      + Math.min(.12,(entity.phase4jTurn||0)*offset);
-    if(score>bestScore){best=v;bestScore=score;entity.phase4jTurn=Math.sign(offset)||entity.phase4jTurn||1;}
+  const direct={x:dx/d,y:dy/d},r=(entity.radius||14)+2;
+  if(phase4jLineClear(entity.x,entity.y,tx,ty,r)) {
+    entity.phase4jWaypoint=null;
+    return direct;
   }
-  return best||{x:-direct.y,y:direct.x};
+  const waypoint=entity.phase4jWaypoint;
+  if(waypoint && Math.hypot(waypoint.x-entity.x,waypoint.y-entity.y)>14
+     && phase4jLineClear(entity.x,entity.y,waypoint.x,waypoint.y,r)) {
+    const angle=Math.atan2(waypoint.y-entity.y,waypoint.x-entity.x);
+    return{x:Math.cos(angle),y:Math.sin(angle)};
+  }
+  entity.phase4jWaypoint=null;
+  // Find the first rock/log intercepting the line of travel.
+  let blocker=null;
+  const look=Math.min(d,400),step=16,count=Math.ceil(look/step);
+  for(let i=1;i<=count&&!blocker;i++){
+    const t=i/count;
+    const x=entity.x+direct.x*look*t,y=entity.y+direct.y*look*t;
+    blocker=phase4j.solids.find(o=>phase4jHits(o,x,y,r))||null;
+  }
+  if(!blocker)return direct;
+  const margin=r+22,candidates=[];
+  if(blocker.kind==='rock'){
+    const rad=blocker.r+margin;
+    for(let i=0;i<16;i++){
+      const a=i*Math.PI/8;
+      candidates.push({x:blocker.x+Math.cos(a)*rad,y:blocker.y+Math.sin(a)*rad});
+    }
+  }else{
+    const vx=blocker.bx-blocker.ax,vy=blocker.by-blocker.ay;
+    const len=Math.hypot(vx,vy)||1,nx=-vy/len,ny=vx/len;
+    for(const end of [{x:blocker.ax,y:blocker.ay},{x:blocker.bx,y:blocker.by}])
+      for(const sign of [-1,1])
+        candidates.push({x:end.x+nx*margin*sign,y:end.y+ny*margin*sign});
+  }
+  let best=null,bestScore=Infinity;
+  for(const p of candidates){
+    if(!phase4jClear(p.x,p.y,r))continue;
+    if(!phase4jLineClear(entity.x,entity.y,p.x,p.y,r))continue;
+    const remaining=Math.hypot(tx-p.x,ty-p.y);
+    const score=Math.hypot(p.x-entity.x,p.y-entity.y)+remaining
+      +(phase4jLineClear(p.x,p.y,tx,ty,r)?0:175);
+    if(score<bestScore){best=p;bestScore=score;}
+  }
+  if(best){
+    entity.phase4jWaypoint=best;
+    const angle=Math.atan2(best.y-entity.y,best.x-entity.x);
+    return{x:Math.cos(angle),y:Math.sin(angle)};
+  }
+  // If two nearby obstacles overlap, a short tangent avoids a stationary loop.
+  const nearest=blocker.kind==='rock'?blocker:phase4jNearestOnLog(entity.x,entity.y,blocker);
+  const rad=Math.atan2(entity.y-nearest.y,entity.x-nearest.x);
+  const a=rad+Math.PI/2*(entity.phase4jTurn||1);
+  return{x:Math.cos(a),y:Math.sin(a)};
 }
 function phase4jNavBuild(){
   const size=PHASE4J.cell;
