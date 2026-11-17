@@ -31,7 +31,17 @@ function phase4hNextType() {
       [phase4h.bag[i], phase4h.bag[j]] = [phase4h.bag[j], phase4h.bag[i]];
     }
   }
-  return phase4h.bag.pop();
+  const critical = typeof phase4fSafety === 'function' && phase4fSafety().inDanger;
+  const hard = typeof phase4f !== 'undefined' && phase4f?.phase === 'hard';
+  let index = -1;
+  if (critical) index = phase4h.bag.findIndex(item => item.id === 'supply');
+  else if (hard) {
+    const safer = phase4h.bag.map((item,i) =>
+      ['supply','shelter','lost'].includes(item.id) ? i : -1).filter(i => i>=0);
+    if (safer.length) index = safer[Math.floor(Math.random()*safer.length)];
+  }
+  if (index < 0) index = phase4h.bag.length - 1;
+  return phase4h.bag.splice(index,1)[0];
 }
 function phase4hLocation() {
   // Clamp to the world while remaining reachable from the player in ~2 seconds.
