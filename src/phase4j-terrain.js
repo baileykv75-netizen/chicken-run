@@ -67,6 +67,15 @@ function phase4jSteer(entity,tx,ty) {
     entity.phase4jWaypoint=null;
     return direct;
   }
+  const path=entity.phase4jPath;
+  if(path?.length) {
+    while(path.length && Math.hypot(path[0].x-entity.x,path[0].y-entity.y)<11) path.shift();
+    if(path.length && phase4jLineClear(entity.x,entity.y,path[0].x,path[0].y,r)){
+      const a=Math.atan2(path[0].y-entity.y,path[0].x-entity.x);
+      return {x:Math.cos(a),y:Math.sin(a)};
+    }
+    entity.phase4jPath=null;
+  }
   const waypoint=entity.phase4jWaypoint;
   if(waypoint && Math.hypot(waypoint.x-entity.x,waypoint.y-entity.y)>14
      && phase4jLineClear(entity.x,entity.y,waypoint.x,waypoint.y,r)) {
@@ -84,6 +93,30 @@ function phase4jSteer(entity,tx,ty) {
   }
   if(!blocker)return direct;
   const margin=r+22,candidates=[];
+  if(blocker.kind==='log'){
+    const ux=(blocker.bx-blocker.ax),uy=(blocker.by-blocker.ay);
+    const len=Math.hypot(ux,uy)||1,ax=ux/len,ay=uy/len,nx=-ay,ny=ax;
+    const side=((entity.x-blocker.ax)*nx+(entity.y-blocker.ay)*ny)>=0?1:-1;
+    const routes=[];
+    for(const end of [{x:blocker.ax,y:blocker.ay,out:-1},{x:blocker.bx,y:blocker.by,out:1}]){
+      const near={x:end.x+nx*margin*side+ax*margin*end.out,
+        y:end.y+ny*margin*side+ay*margin*end.out};
+      const far={x:end.x-nx*margin*side+ax*margin*end.out,
+        y:end.y-ny*margin*side+ay*margin*end.out};
+      if(!phase4jClear(near.x,near.y,r)||!phase4jClear(far.x,far.y,r))continue;
+      if(!phase4jLineClear(entity.x,entity.y,near.x,near.y,r)
+        ||!phase4jLineClear(near.x,near.y,far.x,far.y,r)
+        ||!phase4jLineClear(far.x,far.y,tx,ty,r))continue;
+      routes.push({near,far,cost:Math.hypot(near.x-entity.x,near.y-entity.y)
+        +Math.hypot(far.x-near.x,far.y-near.y)+Math.hypot(tx-far.x,ty-far.y)});
+    }
+    routes.sort((a,b)=>a.cost-b.cost);
+    if(routes.length){
+      entity.phase4jPath=[routes[0].near,routes[0].far];
+      const a=Math.atan2(routes[0].near.y-entity.y,routes[0].near.x-entity.x);
+      return{x:Math.cos(a),y:Math.sin(a)};
+    }
+  }
   if(blocker.kind==='rock'){
     const rad=blocker.r+margin;
     for(let i=0;i<16;i++){
