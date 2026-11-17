@@ -39,6 +39,15 @@ updateChicks = function updateFollowerOnlyChicks(deltaTime) {
       velocityY = (velocityY / speed) * maxSpeed;
     }
 
+    // Choose a nearby tangent when the follow direction is blocked.
+    const chickStep = Math.hypot(velocityX, velocityY);
+    if (playerDistance > player.chickAura && chickStep > 0.1
+        && !phase4jClear(chick.x + velocityX / chickStep * 55,
+          chick.y + velocityY / chickStep * 55, chick.radius || 10)) {
+      const route = phase4jSteer(chick, player.x, player.y);
+      velocityX = route.x * chickStep;
+      velocityY = route.y * chickStep;
+    }
     phase4jMoveEntity(chick, chick.x + velocityX * deltaTime, chick.y + velocityY * deltaTime, chick.radius || 10);
   }
 };
