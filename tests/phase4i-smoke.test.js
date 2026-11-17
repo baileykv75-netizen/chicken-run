@@ -61,7 +61,7 @@ scene.chicks[0].x=coop.x;scene.chicks[0].y=coop.y;
 scene.update(.016);
 assert.equal(count(),2,'delivering to existing coop hatches exactly one chick');
 assert.equal(egg(),null);
-assert.ok(timer()>=165&&timer()<=195,'new egg delay is 90-120 seconds');
+assert.ok(timer()>=166&&timer()<=196,'new egg delay is 90-120 seconds');
 
 // Egg is lost only after abducted chicken is actually lost, not when grabbed.
 scene.elapsed=timer();scene.update(.016);
