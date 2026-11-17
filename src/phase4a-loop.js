@@ -39,8 +39,16 @@ updateChicks = function updateFollowerOnlyChicks(deltaTime) {
       velocityY = (velocityY / speed) * maxSpeed;
     }
 
-    chick.x = clamp(chick.x + velocityX * deltaTime, 14, world.width - 14);
-    chick.y = clamp(chick.y + velocityY * deltaTime, 14, world.height - 14);
+    // Choose a nearby tangent when the follow direction is blocked.
+    const chickStep = Math.hypot(velocityX, velocityY);
+    if (playerDistance > player.chickAura && chickStep > 0.1
+        && !phase4jClear(chick.x + velocityX / chickStep * 55,
+          chick.y + velocityY / chickStep * 55, chick.radius || 10)) {
+      const route = phase4jSteer(chick, player.x, player.y);
+      velocityX = route.x * chickStep;
+      velocityY = route.y * chickStep;
+    }
+    phase4jMoveEntity(chick, chick.x + velocityX * deltaTime, chick.y + velocityY * deltaTime, chick.radius || 10);
   }
 };
 
@@ -83,10 +91,10 @@ updateFoxes = function updateBalancedFoxes(deltaTime) {
       targetY = target.y;
     }
 
-    const direction = normalized(targetX - fox.x, targetY - fox.y);
+    const direction = phase4jSteer(fox, targetX, targetY);
     const carryingMultiplier = fox.carrying ? 1.08 : 1;
-    fox.x += direction.x * fox.speed * carryingMultiplier * deltaTime;
-    fox.y += direction.y * fox.speed * carryingMultiplier * deltaTime;
+    const speed = fox.speed * carryingMultiplier * deltaTime;
+    phase4jMoveEntity(fox, fox.x + direction.x * speed, fox.y + direction.y * speed, fox.radius || 14);
 
     if (
       !fox.carrying &&
@@ -109,8 +117,9 @@ updateFoxes = function updateBalancedFoxes(deltaTime) {
       player.invulnerableFor = 0.72;
       cameraShake = fox.type === 'brute' ? 10 : 7;
       const knockback = normalized(player.x - fox.x, player.y - fox.y);
-      player.x += knockback.x * (fox.type === 'brute' ? 36 : 25);
-      player.y += knockback.y * (fox.type === 'brute' ? 36 : 25);
+      const knockDistance = fox.type === 'brute' ? 36 : 25;
+      phase4jMoveEntity(player, player.x + knockback.x * knockDistance,
+        player.y + knockback.y * knockDistance, player.radius || 18);
       playTone(120, 0.1, 0.055, 'sawtooth');
       if (player.health <= 0) {
         finishGame();
@@ -130,16 +139,10 @@ update = function updateEndlessGame(deltaTime) {
 
   const movement = getMovementInput();
   const hammerMoveMultiplier = player.hammerWindup > 0 ? 0.55 : 1;
-  player.x = clamp(
+  phase4jMoveEntity(player,
     player.x + movement.x * player.speed * hammerMoveMultiplier * deltaTime,
-    18,
-    world.width - 18,
-  );
-  player.y = clamp(
     player.y + movement.y * player.speed * hammerMoveMultiplier * deltaTime,
-    18,
-    world.height - 18,
-  );
+    player.radius || 18);
 
   if (player.hammerWindup > 0) {
     player.hammerWindup -= deltaTime;

@@ -64,8 +64,9 @@ function phase4gSpawnMinions(count, center) {
       if (!spawnFox(i % 3 === 0 ? 'swift' : 'normal')) break;
       const fox = foxes[foxes.length - 1];
       const angle = (i / Math.max(1, count)) * Math.PI * 2;
-      fox.x = clamp(center.x + Math.cos(angle) * 105, 24, world.width-24);
-      fox.y = clamp(center.y + Math.sin(angle) * 105, 24, world.height-24);
+      const clear = phase4jFindObjective(center.x + Math.cos(angle) * 105,
+        center.y + Math.sin(angle) * 105, fox.radius || 20);
+      fox.x = clear.x; fox.y = clear.y;
     }
   } finally { phase4g.suppressElite = false; }
 }
@@ -87,6 +88,8 @@ function phase4gSpawnBoss() {
   fox.phase4gCooldown = 2.2;
   fox.phase4gFacing = { x: 1, y: 0 };
   fox.radius = 35;
+  const clearBoss = phase4jFindObjective(fox.x, fox.y, fox.radius + 4);
+  fox.x = clearBoss.x; fox.y = clearBoss.y;
   fox.speed = 92 + Math.min(24, phase4g.bossNumber * 4);
   fox.phase4gBaseSpeed = fox.speed;
   const hp = 720 + phase4g.bossNumber * 175 + dangerLevel * 22;
@@ -106,14 +109,16 @@ function phase4gSpawnBoss() {
 
 function phase4gDamagePlayer(amount, fox) {
   if (player.invulnerableFor > 0 || state !== 'playing') return;
+  // A solid obstacle also blocks close-range boss and elite hits.
+  if (!phase4jLineClear(fox.x, fox.y, player.x, player.y, 3)) return;
   const reduction = player.damageReductionFor > 0 ? 0.4 : 1;
   const damage = Math.max(2, amount * (1 - player.armor) * reduction);
   player.health -= damage;
   player.invulnerableFor = 0.72;
   cameraShake = Math.max(cameraShake, 6);
   const direction = normalized(player.x - fox.x, player.y - fox.y);
-  player.x = clamp(player.x + direction.x * 24, 18, world.width - 18);
-  player.y = clamp(player.y + direction.y * 24, 18, world.height - 18);
+  phase4jMoveEntity(player, player.x + direction.x * 24,
+    player.y + direction.y * 24, player.radius || 18);
   if (player.health <= 0) finishGame();
 }
 function phase4gGrabChick(fox) {
@@ -127,12 +132,11 @@ function phase4gGrabChick(fox) {
   addParticles(fox.x, fox.y, '!', 2);
 }
 function phase4gMove(fox, x, y, seconds, speedScale = 1) {
-  const dir = normalized(x - fox.x, y - fox.y);
+  const dir = phase4jSteer(fox, x, y);
   fox.phase4gFacing = dir;
   const distance = Math.hypot(x - fox.x, y - fox.y);
   const move = Math.min(distance, fox.speed * speedScale * seconds);
-  fox.x = clamp(fox.x + dir.x * move, 14, world.width - 14);
-  fox.y = clamp(fox.y + dir.y * move, 14, world.height - 14);
+  phase4jMoveEntity(fox, fox.x + dir.x * move, fox.y + dir.y * move, fox.radius || 14);
 }
 function phase4gDashHit(fox, damage, knockChicks = false) {
   if ((player.x - fox.x) ** 2 + (player.y - fox.y) ** 2 < (fox.radius + player.radius + 7) ** 2) {
@@ -143,8 +147,8 @@ function phase4gDashHit(fox, damage, knockChicks = false) {
       if (chick.lost || chick.carriedBy || chick.protectedFor > 0) continue;
       if ((chick.x - fox.x) ** 2 + (chick.y - fox.y) ** 2 > (fox.radius + chick.radius + 8) ** 2) continue;
       const direction = normalized(chick.x - fox.x, chick.y - fox.y);
-      chick.x = clamp(chick.x + direction.x * 55, 14, world.width - 14);
-      chick.y = clamp(chick.y + direction.y * 55, 14, world.height - 14);
+      phase4jMoveEntity(chick, chick.x + direction.x * 55,
+        chick.y + direction.y * 55, chick.radius || 10);
       chick.protectedFor = 0.45;
     }
   }
@@ -197,9 +201,12 @@ function phase4gUpdateElite(fox, dt) {
     }
     if (fox.phase4gMode === 'dash') {
       const step = fox.speed * 3.1 * dt;
-      fox.x = clamp(fox.x + fox.phase4gFacing.x * step, 15, world.width - 15);
-      fox.y = clamp(fox.y + fox.phase4gFacing.y * step, 15, world.height - 15);
-      phase4gDashHit(fox, 13, true);
+      const targetX = fox.x + fox.phase4gFacing.x * step;
+      const targetY = fox.y + fox.phase4gFacing.y * step;
+      const moved = phase4jLineClear(fox.x, fox.y, targetX, targetY, fox.radius || 15)
+        && phase4jMoveEntity(fox, targetX, targetY, fox.radius || 15);
+      if (!moved) { fox.phase4gMode = 'recover'; fox.phase4gClock = 0; }
+      else phase4gDashHit(fox, 13, true);
       if (fox.phase4gClock >= 0.44) {
         fox.phase4gMode = 'recover'; fox.phase4gClock = 0;
       }
@@ -258,9 +265,12 @@ function phase4gUpdateBoss(fox, dt) {
     }
   } else if (fox.phase4gMode === 'charge') {
     const step = fox.speed * (enraged ? 4.0 : 3.3) * dt;
-    fox.x = clamp(fox.x + fox.phase4gFacing.x * step, 35, world.width - 35);
-    fox.y = clamp(fox.y + fox.phase4gFacing.y * step, 35, world.height - 35);
-    phase4gDashHit(fox, enraged ? 22 : 17, true);
+    const targetX = fox.x + fox.phase4gFacing.x * step;
+    const targetY = fox.y + fox.phase4gFacing.y * step;
+    const moved = phase4jLineClear(fox.x, fox.y, targetX, targetY, fox.radius || 35)
+      && phase4jMoveEntity(fox, targetX, targetY, fox.radius || 35);
+    if (!moved) { fox.phase4gMode = 'recover'; fox.phase4gClock = 0; }
+    else phase4gDashHit(fox, enraged ? 22 : 17, true);
     if (fox.phase4gClock >= 0.65) {
       fox.phase4gMode = 'recover'; fox.phase4gClock = 0;
     }

@@ -85,8 +85,9 @@ function phase4hSpawn() {
       finally { phase4g.suppressElite = false; }
       if (!made || foxes.length === old) break;
       const fox = foxes[foxes.length - 1];
-      fox.x = clamp(event.x + Math.cos(i * Math.PI) * 65, 20, world.width - 20);
-      fox.y = clamp(event.y + Math.sin(i * Math.PI) * 65, 20, world.height - 20);
+      const clear = phase4jFindObjective(event.x + Math.cos(i * Math.PI) * 65,
+        event.y + Math.sin(i * Math.PI) * 65, fox.radius || 18);
+      fox.x = clear.x; fox.y = clear.y;
       fox.phase4hGuard = true;
       event.guards.push(fox);
     }
@@ -286,8 +287,8 @@ updateFoxes = function updatePhase4hFoxes(dt) {
     if (thief.stunnedFor <= 0) {
       const edge = nearestWorldEdgeVector(thief.x, thief.y);
       const speed = 115 * dt;
-      thief.x = clamp(thief.x + edge.x * speed, 8, world.width - 8);
-      thief.y = clamp(thief.y + edge.y * speed, 8, world.height - 8);
+      const route = phase4jSteer(thief, thief.x + edge.x * 170, thief.y + edge.y * 170);
+      phase4jMoveEntity(thief, thief.x + route.x * speed, thief.y + route.y * speed, thief.radius || 12);
     }
     if (thief.x <= 9 || thief.x >= world.width - 9 || thief.y <= 9 || thief.y >= world.height - 9) {
       phase4hExpire('狐狸带着宝物逃跑了');
@@ -344,8 +345,9 @@ function phase4hSpawnChestGuards(event) {
       if (!spawnFox(i === 0 ? 'swift' : 'brute') || foxes.length <= before) break;
       const fox = foxes[foxes.length - 1];
       const a = i * Math.PI + Math.PI / 4;
-      fox.x = clamp(event.x + Math.cos(a) * 100, 20, world.width - 20);
-      fox.y = clamp(event.y + Math.sin(a) * 100, 20, world.height - 20);
+      const clear = phase4jFindObjective(event.x + Math.cos(a) * 100,
+        event.y + Math.sin(a) * 100, fox.radius || 18);
+      fox.x = clear.x; fox.y = clear.y;
     }
   } finally { phase4g.suppressElite = false; }
 }

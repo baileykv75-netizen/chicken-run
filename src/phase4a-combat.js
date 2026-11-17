@@ -80,8 +80,12 @@ commonUpgrades = function endlessCommonUpgrades() {
 performSpearDash = function performBalancedSpearDash(direction) {
   const startX = player.x;
   const startY = player.y;
-  const endX = clamp(startX + direction.x * player.dashDistance, 18, world.width - 18);
-  const endY = clamp(startY + direction.y * player.dashDistance, 18, world.height - 18);
+  const dash = { x: startX, y: startY };
+  phase4jMoveEntity(dash,
+    startX + direction.x * player.dashDistance,
+    startY + direction.y * player.dashDistance,
+    player.radius || 18);
+  const endX = dash.x, endY = dash.y;
 
   for (const fox of foxes) {
     if (fox.dead || fox.health <= 0) continue;
