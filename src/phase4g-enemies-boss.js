@@ -109,6 +109,8 @@ function phase4gSpawnBoss() {
 
 function phase4gDamagePlayer(amount, fox) {
   if (player.invulnerableFor > 0 || state !== 'playing') return;
+  // A solid obstacle also blocks close-range boss and elite hits.
+  if (!phase4jLineClear(fox.x, fox.y, player.x, player.y, 3)) return;
   const reduction = player.damageReductionFor > 0 ? 0.4 : 1;
   const damage = Math.max(2, amount * (1 - player.armor) * reduction);
   player.health -= damage;
