@@ -155,8 +155,9 @@ update = function updateEndlessGame(deltaTime) {
   cameraShake = Math.max(0, cameraShake - deltaTime * 30);
   updateHud();
 
-  const alive = chicks.filter((chick) => !chick.lost).length;
-  if (alive <= 0) finishGame();
+  // Phase 5: losing the last escort is not an instant defeat. The player can
+  // still rescue another chick or recover an egg and return to the coop.
+  if (player.health <= 0 && state === 'playing') finishGame();
 };
 
 updateBestText();
