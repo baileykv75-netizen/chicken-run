@@ -58,6 +58,13 @@ function phase5GearPreventFatal(chick){
   return true;
 }
 function phase5GearOnHit(chick,fox){
+  // Tier-3 plate armor supplies one emergency barrier per sortie.
+  if(!chick.phase5ArmorGuardUsed && chick.health<=chick.maxHealth*.25
+      && phase5ChickHas(chick,'armor').some(item=>item.level>=3)){
+    chick.phase5ArmorGuardUsed=true;
+    chick.invulnerableFor=Math.max(chick.invulnerableFor||0,1.35);
+    addParticles(chick.x,chick.y,'◇',5);
+  }
   for(const spike of phase5ChickHas(chick,'thorns')){
     if(fox&&!fox.dead)phase5Deal(chick,fox,8+11*spike.level,12+6*spike.level,spike.level>=2?.16:0);
     if(spike.level>=3)
@@ -115,7 +122,9 @@ function phase5GearActive(chick,item){
       addParticles(target.x,target.y,'⚡',3);return true;
     }
     case 'sniper':{
-      return direct((25+level*18)*(level>=3?1.4:1),470+level*80,8,level>=3?.24:0,true);
+      const crit=level>=2&&Math.random()<(level>=3?.36:.24);
+      return direct((25+level*18)*(level>=3?1.4:1)*(crit?1.6:1),
+        470+level*80,8,level>=3?.24:0,true);
     }
     case 'grenade':{
       if(!target)return false;
@@ -125,8 +134,12 @@ function phase5GearActive(chick,item){
     }
     case 'hammer':
       return blast(chick.x,chick.y,65+level*20,17+level*13,29+level*11,level>=3?.27:0);
-    case 'orbit':
-      return blast(chick.x,chick.y,53+level*13,9+level*7,9,0);
+    case 'orbit':{
+      // Extra orbiting blade at tier 2+ attacks independently; tier 3 reaches farther.
+      const hit=blast(chick.x,chick.y,53+level*13,9+level*7,9,0);
+      if(hit&&level>=2)blast(chick.x,chick.y,57+level*13,6+level*6,4,0);
+      return hit;
+    }
     case 'frost':{
       if(!target)return false;
       for(const f of phase5HostileFoxes(target.x,target.y,70+level*22)){
