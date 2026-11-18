@@ -67,12 +67,12 @@ const { chromium } = require('playwright');
       const scenarios=[
         {name:'open ordinary',kind:'normal',obstacles:[]},
         {name:'open elite',kind:'elite',obstacles:[]},
-        {name:'rock ordinary',kind:'normal',obstacles:[
-          {kind:'rock',x:1250,y:450,r:55}]},
-        {name:'log ordinary',kind:'normal',obstacles:[
-          {kind:'log',ax:1160,ay:520,bx:1340,by:520,r:17}]},
-        {name:'rock elite',kind:'elite',obstacles:[
-          {kind:'rock',x:1250,y:450,r:55}]},
+        {name:'rock ordinary',kind:'normal',x:1250,y:1300,obstacles:[
+          {kind:'rock',x:1250,y:1460,r:86}]},
+        {name:'log ordinary',kind:'normal',x:1250,y:1300,obstacles:[
+          {kind:'log',ax:1100,ay:1460,bx:1400,by:1460,r:17}]},
+        {name:'rock elite',kind:'elite',x:1250,y:1300,obstacles:[
+          {kind:'rock',x:1250,y:1460,r:86}]},
         {name:'near visual fence',kind:'normal',obstacles:[],x:world.width/2,y:world.height-250},
       ];
       return scenarios.map(config=>{
@@ -91,10 +91,12 @@ const { chromium } = require('playwright');
         }
         foxes=[fox];chick.carriedBy=fox;
         let steps=0,turns=0,idleFrames=0,lastDirection=null,maxIdle=0;
+        let maxSideways=0;
         for(;steps<1000&&!chick.lost;steps++){
           const px=fox.x,py=fox.y;
           updateFoxes(.033);
           const distance=Math.hypot(fox.x-px,fox.y-py);
+          maxSideways=Math.max(maxSideways,Math.abs(fox.x-(config.x??world.width/2)));
           if(distance<.12)idleFrames++;else idleFrames=0;
           maxIdle=Math.max(maxIdle,idleFrames);
           if(distance>.15){
@@ -104,7 +106,7 @@ const { chromium } = require('playwright');
           }
         }
         return {name:config.name,steps,escaped:chick.lost,
-          stillCarried:!!chick.carriedBy,turns,maxIdle,
+          stillCarried:!!chick.carriedBy,turns,maxIdle,maxSideways,
           exit:fox.phase4jEscape?.target||null};
       });
     });
@@ -114,6 +116,9 @@ const { chromium } = require('playwright');
         throw Error('Captor failed to finish flight: '+JSON.stringify(result));
       if(result.maxIdle>80||result.turns>15)
         throw Error('Captor stuttered excessively: '+JSON.stringify(result));
+      if(['rock ordinary','log ordinary','rock elite'].includes(result.name)
+         && result.maxSideways<65)
+        throw Error('Escape did not actually detour around the obstacle: '+JSON.stringify(result));
     }
     if(errors.length)throw Error('Runtime errors in capture checks: '+errors.join(' | ').slice(0,2200));
     console.log('PASS: time advances; normal/elite escapes lose the chick, defeating captor rescues it.');
