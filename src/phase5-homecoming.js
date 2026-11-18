@@ -19,6 +19,17 @@ const phase5Status = document.createElement('div');
 phase5Status.id = 'phase5Status';
 phase5Status.style.cssText = 'position:fixed;right:14px;top:243px;z-index:8;padding:7px 9px;border-radius:9px;background:#f7edd9e8;color:#483c2d;font:700 13px sans-serif;pointer-events:none';
 document.querySelector('#app').appendChild(phase5Status);
+// Keep navigation visible on mobile without covering the entire play area.
+function phase5SizeNavigation(){
+  const small=window.innerWidth<700;
+  phase5Map.style.width=small?'150px':'222px';
+  phase5Map.style.height=small?'110px':'162px';
+  phase5Map.style.top=small?'98px':'72px';
+  phase5Status.style.top=small?'216px':'243px';
+  phase5Status.style.fontSize=small?'11px':'13px';
+}
+window.addEventListener('resize',phase5SizeNavigation);
+phase5SizeNavigation();
 
 // Every deployed chick has its own HP. No awakened/cultivated immunity.
 // Repeated fox contact is throttled, but there is no automatic regeneration.
