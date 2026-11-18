@@ -8,7 +8,11 @@ function activateGunWorldline() {
   const newBase = player.gunArchetype === 'revolver' ? 0.64 : player.gunArchetype === 'rifle' ? 0.86 : 1.18;
   player.attackInterval = Math.max(0.25, newBase * speedFactor);
   // Sword's pre-evolution overlimit route must also grant its revolver benefit.
-  player.revolverTargets = player.overlimitRoute === 'sword-ring' ? 5 : 3;
+  // Sword's wider cleave is translated into a wider revolver target spread.
+  const inheritedFanTargets = Math.max(0,
+    Math.round(((player.swordArc || 1.12) - 1.12) / 0.16));
+  player.revolverTargets = Math.min(7,
+    (player.overlimitRoute === 'sword-ring' ? 5 : 3) + inheritedFanTargets);
   player.spearBusy = false;
   player.hammerWindup = 0;
   spearShots = [];
@@ -130,7 +134,7 @@ weaponUpgrades = function stage4bGunUpgrades() {
       {
         id: 'revolver-chamber', icon: '🎯', name: '扩容弹巢',
         description: '左轮每轮多锁定 1 个目标',
-        apply: () => { player.revolverTargets = Math.min(6, (player.revolverTargets || 3) + 1); },
+        apply: () => { player.revolverTargets = Math.min(7, (player.revolverTargets || 3) + 1); },
       },
       {
         id: 'revolver-draw', icon: '⚡', name: '快速拔枪',
