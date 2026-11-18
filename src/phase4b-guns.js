@@ -7,7 +7,8 @@ function activateGunWorldline() {
   const speedFactor = player.attackInterval / originalBase;
   const newBase = player.gunArchetype === 'revolver' ? 0.64 : player.gunArchetype === 'rifle' ? 0.86 : 1.18;
   player.attackInterval = Math.max(0.25, newBase * speedFactor);
-  player.revolverTargets = 3;
+  // Sword's pre-evolution overlimit route must also grant its revolver benefit.
+  player.revolverTargets = player.overlimitRoute === 'sword-ring' ? 5 : 3;
   player.spearBusy = false;
   player.hammerWindup = 0;
   spearShots = [];
@@ -17,12 +18,22 @@ function activateGunWorldline() {
   updateHud();
 }
 
+// Convert spear's accumulated projectile-speed upgrades into rifle range.
+// Hitscan bullets have no travel time, so retaining projectileSpeed alone
+// would silently discard a previously paid-for upgrade.
+function stage4bRifleRange() {
+  const base = Math.max(390, player.attackRange * 1.35);
+  const original = WEAPONS.spear.projectileSpeed || 1;
+  const speedGrowth = Math.max(0, player.projectileSpeed / original - 1);
+  return base * (1 + Math.min(0.6, speedGrowth * 0.5));
+}
+
 function performRevolverAttack() {
   const revolverRange = Math.max(230, player.attackRange * 3.2);
   const targets = foxes
     .filter((fox) => !fox.dead && fox.health > 0 && distanceSquared(player, fox) <= revolverRange ** 2)
     .sort((a, b) => distanceSquared(player, a) - distanceSquared(player, b))
-    .slice(0, Math.max(player.revolverTargets || 3, player.doubleSlashChance ? 4 : 3));
+    .slice(0, player.revolverTargets || 3);
   if (!targets.length) return false;
   const baseDamage = Math.max(24, player.attackDamage * 0.78);
   for (const target of targets) {
@@ -30,13 +41,28 @@ function performRevolverAttack() {
     damageFox(target, baseDamage, direction, 9);
     stage4bGunShots.push({ x1: player.x, y1: player.y, x2: target.x, y2: target.y, life: 0.1, kind: 'revolver' });
   }
+  // The old sword Double Slash becomes an actual follow-up shot, not merely
+  // an unused chance stat or an extra target slot.
+  if ((player.doubleSlashChance || 0) > 0 && Math.random() < player.doubleSlashChance) {
+    const target = targets.find((fox) => !fox.dead && fox.health > 0);
+    if (target) {
+      const direction = normalized(target.x - player.x, target.y - player.y);
+      damageFox(target, baseDamage * 0.72, direction, 9);
+      stage4bGunShots.push({ x1: player.x, y1: player.y, x2: target.x, y2: target.y,
+        life: 0.12, kind: 'revolver' });
+    }
+  }
   player.facing = normalized(targets[0].x - player.x, targets[0].y - player.y);
+  // Retain the sword's every-third-attack wave, including the ring route.
+  player.swordRhythm = (player.swordRhythm || 0) + 1;
+  if (player.swordRhythm % 3 === 0 && typeof stage4cSwordWave === 'function')
+    stage4cSwordWave();
   playTone(760, 0.045, 0.035, 'square');
   return true;
 }
 
 function performRifleAttack() {
-  const rifleRange = Math.max(390, player.attackRange * 1.35);
+  const rifleRange = stage4bRifleRange();
   const target = nearestLivingFox(rifleRange);
   if (!target) return false;
   const direction = normalized(target.x - player.x, target.y - player.y);
@@ -77,6 +103,17 @@ function performShotgunAttack() {
     hitAny = true;
   }
   player.facing = direction;
+  // Hammer's secondary shockwave remains an attack effect after evolving
+  // into a shotgun, using the already-existing delayed-slam system.
+  if (player.secondarySlam && typeof stage4cDelayedSlams !== 'undefined') {
+    stage4cDelayedSlams.push({
+      x: player.x + direction.x * Math.min(44, player.attackRange * 0.38),
+      y: player.y + direction.y * Math.min(44, player.attackRange * 0.38),
+      radius: player.slamRadius * 1.18,
+      delay: 0.42,
+      damage: player.attackDamage * 0.48,
+    });
+  }
   stage4bGunShots.push({ x1: player.x, y1: player.y, x2: player.x + direction.x * shotgunRange, y2: player.y + direction.y * shotgunRange, life: 0.16, kind: 'shotgun' });
   cameraShake = Math.max(cameraShake, 6);
   playTone(125, 0.1, 0.06, 'square');
