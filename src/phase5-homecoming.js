@@ -263,6 +263,7 @@ phase5CoopButton.addEventListener('click',()=>{
     if(stored) {
       stored.atCoop=false;stored.phase5Departing=true;
       stored.phase5PhoenixUsed=false;stored.phase5ShieldReady=0;
+      stored.phase5ArmorGuardUsed=false;
       stored.x=player.x+30;stored.y=player.y+30;
       phase4iMessage('小鸡出征！野外有被抓走的风险');
     }
