@@ -67,7 +67,9 @@ updateFoxes = function updateBalancedFoxes(deltaTime) {
       targetX = fox.x + edge.x * 160;
       targetY = fox.y + edge.y * 160;
 
-      if (fox.x < 8 || fox.x > world.width - 8 || fox.y < 8 || fox.y > world.height - 8) {
+      const escapeMargin = (fox.radius || 14) + 1;
+      if (fox.x <= escapeMargin || fox.x >= world.width - escapeMargin ||
+          fox.y <= escapeMargin || fox.y >= world.height - escapeMargin) {
         fox.carrying.lost = true;
         fox.carrying.carriedBy = null;
         fox.carrying = null;
