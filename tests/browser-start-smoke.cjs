@@ -276,6 +276,25 @@ const { chromium } = require('playwright');
       homecoming.delivered.stillCarried||!homecoming.remains||!homecoming.noTimedWin||
       homecoming.completed.state!=='result'||homecoming.completed.safe!==10)
       throw Error('Phase 5 homecoming regression: '+JSON.stringify(homecoming));
+    const coopDeploy=await page.evaluate(()=>{
+      resetGame();state='playing';
+      const chick=chicks[0],coop=phase5Coop();
+      phase5CoopButton.click();
+      const deployed=!chick.atCoop;
+      update(.033);
+      const staysDeployed=!chick.atCoop;
+      player.x=coop.x+PHASE4I.deliveryRadius+80;
+      player.y=coop.y;
+      update(.033);
+      const outside=!chick.atCoop;
+      player.x=coop.x;player.y=coop.y;
+      update(.033);
+      return {deployed,staysDeployed,outside,returned:chick.atCoop};
+    });
+    console.log('COOP DEPLOY CHECK',JSON.stringify(coopDeploy));
+    if(!coopDeploy.deployed||!coopDeploy.staysDeployed||
+       !coopDeploy.outside||!coopDeploy.returned)
+      throw Error('Chick deployment/return bug: '+JSON.stringify(coopDeploy));
     if(errors.length)throw Error('Runtime errors in capture checks: '+errors.join(' | ').slice(0,2200));
     console.log('PASS: time advances; normal/elite escapes lose the chick, defeating captor rescues it.');
   } finally {await browser.close()}
