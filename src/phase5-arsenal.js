@@ -1,5 +1,5 @@
 // Phase 5C: coins, chicken upgrades, four weapon slots, inventory and shop.
-const phase5Arsenal={items:[],serial:1,selectedId:null,category:'火力',shopOpen:false,chest:null,chestSeed:0};
+const phase5Arsenal={items:[],serial:1,selectedId:null,category:'火力',tab:'equip',shopOpen:false,chest:null,chestSeed:0};
 const phase5ShopButton=document.createElement('button');
 phase5ShopButton.id='phase5ShopButton';phase5ShopButton.type='button';
 phase5ShopButton.textContent='鸡棚商店 / 小鸡培养';
@@ -7,7 +7,7 @@ phase5ShopButton.style.cssText='position:fixed;bottom:40px;left:50%;transform:tr
 document.querySelector('#app').append(phase5ShopButton);
 const phase5ShopPanel=document.createElement('div');
 phase5ShopPanel.id='phase5ShopPanel';
-phase5ShopPanel.style.cssText='position:fixed;inset:3% 7%;z-index:70;background:#f8f0da;color:#403725;border:3px solid #a58956;border-radius:18px;overflow:auto;padding:18px;box-shadow:0 0 0 100vmax #0007;display:none;font:15px/1.5 sans-serif';
+phase5ShopPanel.className='p5-shop-panel';
 document.querySelector('#app').append(phase5ShopPanel);
 const phase5CoinPill=document.createElement('div');
 phase5CoinPill.id='phase5CoinPill';phase5CoinPill.className='pill';
@@ -121,50 +121,96 @@ function phase5HealChick(chick){
   if(phase5.gold<cost)return false;
   phase5.gold-=cost;chick.health=chick.maxHealth;return true;
 }
-function phase5ShopCard(text,action,disabled=false){
-  return '<button type="button" data-action="'+action+'" '+(disabled?'disabled':'')+' style="padding:6px 9px;border-radius:8px;border:1px solid #aa9364;background:#fff9e8;color:#4b3825;cursor:pointer">'+text+'</button>';
+function phase5ShopCard(text,action,disabled=false,style=''){
+  return '<button type="button" class="p5-action '+style+'" data-action="'+action+'" '+(disabled?'disabled':'')+'>'+text+'</button>';
+}
+function phase5ShopItemInfo(item){
+  const gear=PHASE5_GEAR_BY_ID[item.id];
+  return gear.icon+' '+gear.name+' <small>Lv.'+item.level+'</small>';
 }
 function phase5ShopRender(){
   if(!phase5Arsenal.shopOpen)return;
   const selected=phase5SelectedChick();
   if(selected)phase5Arsenal.selectedId=selected.id;
   const survivors=chicks.filter(c=>c.atCoop&&!c.lost);
-  let html='<div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><h2 style="margin:0">鸡棚 · 整备与交易</h2>'+phase5ShopCard('关闭','close')+'</div>';
-  html+='<p style="margin:6px 0 10px">🪙 金币 '+phase5.gold+' · 装备库存 '+phase5Arsenal.items.length+' · 归巢 '+phase5SafeCount()+'/10</p>';
-  html+='<div style="border:1px solid #bfb197;border-radius:12px;padding:10px;margin-bottom:12px"><b>选择小鸡</b><div style="display:flex;gap:7px;flex-wrap:wrap;margin:8px 0">';
-  for(const chick of survivors){
-    phase5EnsureChick(chick);
-    html+=phase5ShopCard('🐥 #'+chick.id+' Lv.'+chick.trainingLevel+(selected===chick?' ✓':''),'select:'+chick.id);
+  const held=selected?phase5ChickItems(selected):[];
+  const available=phase5Arsenal.items.filter(item=>item.ownerId===null);
+  const tab=phase5Arsenal.tab;
+  let html='<div class="p5-top"><div><h2>鸡棚整备</h2><p>给小鸡配武器，整备好了再出发</p></div>'+phase5ShopCard('✕ 关闭','close',false,'p5-close')+'</div>';
+  html+='<div class="p5-summary"><strong>🪙 '+phase5.gold+' <span>金币</span></strong><span>🏠 归巢 '+phase5SafeCount()+'/10</span><span>🎒 装备 '+phase5Arsenal.items.length+'件</span></div>';
+  html+='<nav class="p5-tabs" aria-label="鸡棚功能">';
+  for(const [key,label] of [['equip','① 装备小鸡'],['buy','② 购买武器'],['sell','③ 出售装备']])
+    html+=phase5ShopCard(label,'tab:'+key,false,tab===key?'p5-active':'');
+  html+='</nav>';
+  if(tab==='equip'){
+    html+='<div class="p5-section-head"><b>选择小鸡</b><small>只有留守鸡棚的小鸡可以整备</small></div>';
+    html+='<div class="p5-chicks">';
+    for(const chick of survivors){
+      phase5EnsureChick(chick);
+      html+=phase5ShopCard('🐥 #'+chick.id+' <small>Lv.'+chick.trainingLevel+'</small>','select:'+chick.id,false,selected===chick?'p5-active':'');
+    }
+    html+='</div>';
+    if(!selected)html+='<div class="p5-empty">当前没有留守的小鸡，请先带小鸡返回鸡棚。</div>';
+    else{
+      phase5RefreshChickHp(selected);
+      const cost=selected.trainingLevel===1?35:selected.trainingLevel===2?75:0;
+      const hp=Math.max(0,Math.ceil(selected.health)), max=selected.maxHealth;
+      const healCost=Math.max(2,Math.ceil((max-hp)/5));
+      html+='<div class="p5-chick-status"><div class="p5-status-title"><b>🐥 小鸡 #'+selected.id+' · Lv.'+selected.trainingLevel+'</b><span>武器 '+held.length+'/4</span></div>';
+      html+='<div class="p5-hp-row"><span>生命 '+hp+'/'+max+'</span><div class="p5-hp-track"><i style="width:'+Math.max(0,Math.min(100,Math.round(hp/max*100)))+'%"></i></div></div>';
+      html+='<div class="p5-actions">';
+      html+=phase5ShopCard(cost?'升级小鸡 · 🪙'+cost:'已满级','level',!cost||phase5.gold<cost,'p5-primary');
+      html+=phase5ShopCard(hp>=max?'生命已满':'付费治疗 · 🪙'+healCost,'heal',hp>=max||phase5.gold<healCost);
+      html+='</div></div>';
+      html+='<div class="p5-section-head"><b>已装备 '+held.length+'/4</b><small>四件武器可同时生效</small></div>';
+      html+='<div class="p5-slots">';
+      for(let i=0;i<4;i++){
+        const item=held[i];
+        html+='<div class="p5-slot"><span class="p5-slot-index">'+(i+1)+'</span>';
+        if(item){
+          html+='<div class="p5-slot-name">'+phase5ShopItemInfo(item)+'</div>';
+          const price=item.level===1?25:55;
+          html+='<div class="p5-slot-buttons">'+phase5ShopCard('强化'+(item.level<3?' 🪙'+price:''),'upgrade:'+item.uid,item.level>=3||phase5.gold<price||selected.trainingLevel<=item.level)+phase5ShopCard('卸下','equip:'+item.uid)+'</div>';
+        }else html+='<span class="p5-placeholder">空装备槽</span>';
+        html+='</div>';
+      }
+      html+='</div><div class="p5-section-head"><b>背包 · 可装备 '+available.length+'件</b><small>点击「装上」分配给当前小鸡</small></div>';
+      html+='<div class="p5-inventory">';
+      if(!available.length)html+='<div class="p5-empty">背包为空。可以去「购买武器」选购，或去野外开箱。</div>';
+      for(const item of available) {
+        html+='<div class="p5-inventory-row"><span>'+phase5ShopItemInfo(item)+'</span>';
+        const locked=item.level>selected.trainingLevel;
+        html+=phase5ShopCard(locked?'需要小鸡Lv.'+item.level:'装上','equip:'+item.uid,locked||held.length>=4,'p5-primary');
+        html+='</div>';
+      }
+      html+='</div>';
+    }
+  } else if(tab==='buy'){
+    html+='<div class="p5-section-head"><b>购买一级武器</b><small>购买后进入背包，回「装备小鸡」安装</small></div>';
+    html+='<div class="p5-categories">';
+    for(const category of ['火力','守护','控制','生存','战术','奇术'])
+      html+=phase5ShopCard(category,'category:'+category,false,phase5Arsenal.category===category?'p5-active':'');
+    html+='</div><div class="p5-catalog">';
+    for(const type of PHASE5_GEAR.filter(g=>g.category===phase5Arsenal.category)){
+      html+='<div class="p5-product"><div class="p5-product-title"><b>'+type.icon+' '+type.name+'</b><strong>🪙 '+type.cost+'</strong></div>';
+      html+='<p>'+type.description+'</p>';
+      html+=phase5ShopCard('购买','buy:'+type.id,phase5.gold<type.cost,'p5-primary');
+      html+='</div>';
+    }
+    html+='</div>';
+  } else {
+    html+='<div class="p5-section-head"><b>出售装备</b><small>返还累计投入约65%的金币；已穿戴的装备也可出售</small></div>';
+    html+='<div class="p5-sell-list">';
+    if(!phase5Arsenal.items.length)html+='<div class="p5-empty">当前没有可出售的装备。</div>';
+    for(const item of phase5Arsenal.items){
+      const owner=chicks.find(c=>(c.equipment||[]).includes(item.uid));
+      const canSell=!owner||owner.atCoop;
+      html+='<div class="p5-inventory-row"><span>'+phase5ShopItemInfo(item)+'<small class="p5-sub">'+(owner?'已装备：小鸡 #'+owner.id:'背包中')+'</small></span>';
+      html+=phase5ShopCard('出售 · 🪙'+Math.floor(phase5GearValue(item)*.65),'sell:'+item.uid,!canSell);
+      html+='</div>';
+    }
+    html+='</div>';
   }
-  html+='</div>';
-  if(selected){
-    phase5RefreshChickHp(selected);
-    const cost=selected.trainingLevel===1?35:selected.trainingLevel===2?75:0;
-    html+='<div>Lv.'+selected.trainingLevel+' · HP '+Math.ceil(selected.health)+'/'+selected.maxHealth+' · 武器 '+selected.equipment.length+'/4</div>';
-    html+='<div style="margin:6px 0;display:flex;gap:7px;flex-wrap:wrap">';
-    html+=phase5ShopCard(cost?'升级小鸡（'+cost+'金币）':'已达Lv.3','level',!cost||phase5.gold<cost);
-    const healCost=Math.max(2,Math.ceil((selected.maxHealth-selected.health)/5));
-    html+=phase5ShopCard('治疗（'+healCost+'金币）','heal',selected.health>=selected.maxHealth||phase5.gold<healCost);
-    html+='</div><small>升级仅增加生命上限，不能免费回血；装备等级不可超过小鸡等级。</small>';
-  } else html+='<div>没有留守小鸡：先带小鸡安全返回鸡棚。</div>';
-  html+='</div><h3 style="margin:4px 0">装备库存</h3><div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px">';
-  for(const item of phase5Arsenal.items){
-    const type=PHASE5_GEAR_BY_ID[item.id];
-    const owner=chicks.find(c=>(c.equipment||[]).includes(item.uid));
-    html+='<div style="border:1px solid #bfb197;border-radius:9px;padding:8px;min-width:175px"><b>'+type.icon+' '+type.name+' Lv.'+item.level+'</b><div><small>'+(owner?'已配给 #'+owner.id:'在库存')+'</small></div>';
-    html+=phase5ShopCard(owner===selected?'卸下':'装备','equip:'+item.uid,!selected||owner&&owner!==selected||!owner&&(item.level>selected.trainingLevel||selected.equipment.length>=4));
-    html+=' '+phase5ShopCard('强化','upgrade:'+item.uid,item.level>=3||phase5.gold<(item.level===1?25:55)||owner&&owner.trainingLevel<=item.level);
-    html+=' '+phase5ShopCard('卖 '+Math.floor(phase5GearValue(item)*.65),'sell:'+item.uid,owner&&!owner.atCoop)+'</div>';
-  }
-  if(!phase5Arsenal.items.length)html+='<small>库存为空，选择下方装备购买或去野外开宝箱。</small>';
-  html+='</div><h3 style="margin:4px 0">常驻商店</h3><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">';
-  for(const category of ['火力','守护','控制','生存','战术','奇术'])
-    html+=phase5ShopCard(category+(phase5Arsenal.category===category?' ✓':''),'category:'+category);
-  html+='</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:9px">';
-  for(const type of PHASE5_GEAR.filter(g=>g.category===phase5Arsenal.category)){
-    html+='<div style="border:1px solid #b9a886;border-radius:10px;padding:10px"><strong>'+type.icon+' '+type.name+'</strong><div style="font-size:12px;min-height:35px">'+type.description+'</div><div style="margin-top:5px">'+phase5ShopCard('购买 Lv.1 · '+type.cost+'金币','buy:'+type.id,phase5.gold<type.cost)+'</div></div>';
-  }
-  html+='</div>';
   phase5ShopPanel.innerHTML=html;
 }
 function phase5ShopClose(){
@@ -190,6 +236,7 @@ phase5ShopPanel.addEventListener('click',ev=>{
   if(action==='close'){phase5ShopClose();return;}
   const selected=phase5SelectedChick();
   if(action.startsWith('select:'))phase5Arsenal.selectedId=Number(action.slice(7));
+  else if(action.startsWith('tab:'))phase5Arsenal.tab=action.slice(4);
   else if(action.startsWith('category:'))phase5Arsenal.category=action.slice(9);
   else if(action.startsWith('buy:'))phase5BuyGear(action.slice(4));
   else if(action.startsWith('equip:'))phase5EquipItem(selected,Number(action.slice(6)));
@@ -203,7 +250,7 @@ const phase5ArsenalResetBase=resetGame;
 resetGame=function resetPhase5Arsenal(){
   phase5Arsenal.items=[];phase5Arsenal.serial=1;phase5Arsenal.selectedId=null;
   phase5Arsenal.chest=null;phase5Arsenal.chestSeed=0;
-  phase5Arsenal.shopOpen=false;phase5ShopPanel.style.display='none';
+  phase5Arsenal.shopOpen=false;phase5Arsenal.tab='equip';phase5ShopPanel.style.display='none';
   phase5ArsenalResetBase();
   phase5.gold=25;
   for(const chick of chicks)phase5RefreshChickHp(chick);

@@ -1,0 +1,46 @@
+/* Clear, compact coop management UI. Styles are scoped to the shop. */
+.p5-shop-panel{position:fixed;inset:5% max(14px,calc((100vw - 950px)/2));z-index:70;display:none;overflow-y:auto;overscroll-behavior:contain;background:#f7f0dc;color:#423625;border:2px solid #b49a6d;border-radius:16px;padding:20px;box-shadow:0 0 0 100vmax #0009;font:14px/1.45 system-ui,sans-serif}
+.p5-shop-panel *{box-sizing:border-box}
+.p5-top,.p5-summary,.p5-status-title,.p5-inventory-row,.p5-product-title,.p5-section-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.p5-top{margin-bottom:12px}
+.p5-top h2{font-size:22px;line-height:1.3;margin:0}
+.p5-top p{font-size:12px;color:#796d5d;margin:3px 0 0}
+.p5-summary{border-radius:10px;background:#efe1bd;padding:12px;flex-wrap:wrap;margin-bottom:14px;color:#594c35}
+.p5-summary strong{font-size:22px;color:#59421d}
+.p5-summary strong span{font-size:12px;font-weight:500}
+.p5-tabs{display:flex;gap:6px;margin-bottom:16px;background:#e9dfc7;padding:5px;border-radius:10px}
+.p5-action{font:inherit;background:#fffaf0;color:#584730;border:1px solid #bda985;border-radius:8px;padding:8px 12px;cursor:pointer;white-space:normal}
+.p5-action:hover:not(:disabled){border-color:#8a714b;background:#f4e8ce}
+.p5-action:disabled{opacity:.45;cursor:not-allowed}
+.p5-action.p5-active,.p5-action.p5-primary{background:#766342;color:#fff8e9;border-color:#766342}
+.p5-tabs .p5-action{flex:1;min-width:0}
+.p5-close{flex:none}
+.p5-section-head{margin:14px 0 9px}
+.p5-section-head b{font-size:16px}
+.p5-section-head small,.p5-sub{font-size:12px;color:#84735d}
+.p5-chicks,.p5-actions,.p5-categories{display:flex;flex-wrap:wrap;gap:7px}
+.p5-chick-status{background:#fffbf1;border:1px solid #d2bea0;padding:14px;border-radius:11px;margin:12px 0}
+.p5-status-title b{font-size:18px}
+.p5-hp-row{display:flex;align-items:center;gap:12px;margin:12px 0;color:#6f513e}
+.p5-hp-track{background:#e4d8cd;flex:1;height:9px;border-radius:20px;overflow:hidden}
+.p5-hp-track i{display:block;height:100%;background:#b87866;border-radius:20px}
+.p5-slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.p5-slot{min-height:72px;display:flex;align-items:center;gap:8px;background:#fffaf0;border:1px solid #cebd9d;border-radius:10px;padding:10px}
+.p5-slot-index{display:flex;align-items:center;justify-content:center;width:26px;height:26px;flex:none;border-radius:7px;background:#e6d6b8;color:#705633;font-weight:700}
+.p5-slot-name{font-weight:650;flex:1;min-width:0}
+.p5-slot-name small,.p5-inventory-row small{color:#8b745a;font-weight:400}
+.p5-slot-buttons{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.p5-slot-buttons .p5-action{font-size:12px;padding:5px 8px}
+.p5-placeholder{color:#9a8d79}
+.p5-inventory,.p5-sell-list{display:grid;gap:7px}
+.p5-inventory-row{padding:10px 12px;border:1px solid #d4c5a6;background:#fffcf5;border-radius:9px;min-width:0}
+.p5-inventory-row>span{min-width:0;display:block}
+.p5-sub{display:block;margin-top:2px}
+.p5-empty{padding:20px;background:#f1e7d0;color:#826e50;border-radius:9px;text-align:center}
+.p5-categories{margin-bottom:14px}
+.p5-catalog{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.p5-product{border:1px solid #d4c5a6;background:#fffaf0;border-radius:10px;padding:13px}
+.p5-product-title b{font-size:16px}
+.p5-product-title strong{white-space:nowrap;color:#9a682e}
+.p5-product p{font-size:13px;color:#736957;margin:9px 0 13px;min-height:39px}
+@media(max-width:640px){.p5-shop-panel{inset:2% 8px;padding:12px;border-radius:13px}.p5-top h2{font-size:19px}.p5-summary{gap:6px;padding:9px}.p5-summary strong{font-size:18px}.p5-tabs .p5-action{padding:8px 3px;font-size:12px}.p5-slots,.p5-catalog{grid-template-columns:1fr}.p5-slot{min-height:58px}.p5-slot-buttons .p5-action{font-size:11px}.p5-section-head small{max-width:54%;text-align:right}}
