@@ -160,6 +160,77 @@ const { chromium } = require('playwright');
       spearDirectionCheck.rifle.dash.x>-.9||
       spearDirectionCheck.moving.aim.x<.9)
       throw Error('Dash followed the enemy rather than movement: '+JSON.stringify(spearDirectionCheck));
+    // Upgrades earned before a gun worldline must remain effective afterwards.
+    const inheritance=await page.evaluate(()=>{
+      function upgrade(id) {
+        const u=[...commonUpgrades(),...weaponUpgrades()].find(u=>u.id===id);
+        if(!u)throw Error('Missing upgrade '+id);
+        u.apply();
+      }
+      function foxAt(distance=85) {
+        return {x:player.x+distance,y:player.y,radius:14,
+          health:10000,maxHealth:10000,type:'normal',xp:1,
+          stunnedFor:0,hitFlash:0,dead:false,carrying:null};
+      }
+      const result={};
+      selectedWeapon='sword';resetGame();state='playing';phase4j.solids=[];
+      upgrade('damage');upgrade('rate');upgrade('sword-double');
+      stage4cApplyOverlimit('sword-ring');
+      const swordBase=player.attackDamage,swordChance=player.doubleSlashChance;
+      const swordSpeed=player.attackInterval/WEAPONS.sword.attackInterval;
+      activateGunWorldline();
+      const swordStats={attackDamage:player.attackDamage,interval:player.attackInterval,
+        expectedInterval:Math.max(.25,.64*swordSpeed),chance:player.doubleSlashChance,
+        targets:player.revolverTargets};
+      const swordFox=foxAt();foxes=[swordFox];stage4bGunShots=[];hammerSlams=[];
+      const random=Math.random;Math.random=()=>0;
+      try {for(let n=0;n<3;n++)performRevolverAttack()}
+      finally {Math.random=random}
+      result.sword={...swordStats,originalDamage:swordBase,originalChance:swordChance,
+        shots:stage4bGunShots.length,rhythm:player.swordRhythm,
+        wave:hammerSlams.length,foxRemaining:swordFox.health};
+
+      selectedWeapon='spear';resetGame();state='playing';phase4j.solids=[];
+      upgrade('damage');upgrade('spear-return-force');
+      upgrade('spear-edge');upgrade('spear-volley');
+      const spearData={out:player.damageOut,back:player.damageBack,
+        pierce:player.maxPierce,count:player.spearCount,projectileSpeed:player.projectileSpeed};
+      activateGunWorldline();
+      const rifleRange=stage4bRifleRange(),baseRange=Math.max(390,player.attackRange*1.35);
+      const target=foxAt((rifleRange+baseRange)/2);foxes=[target];
+      const rifleHit=performRifleAttack();
+      result.spear={...spearData,gunOut:player.damageOut,gunBack:player.damageBack,
+        gunPierce:player.maxPierce,gunCount:player.spearCount,
+        rifleRange,baseRange,rifleHit,remaining:target.health};
+
+      selectedWeapon='hammer';resetGame();state='playing';phase4j.solids=[];
+      upgrade('damage');upgrade('hammer-force');
+      stage4cApplyOverlimit('hammer-sky');
+      const hammerData={damage:player.attackDamage,knockback:player.knockback,
+        secondarySlam:player.secondarySlam};
+      activateGunWorldline();
+      const hammerFox=foxAt();foxes=[hammerFox];stage4cDelayedSlams=[];
+      const hit=performShotgunAttack(),afterShot=hammerFox.health;
+      const pending=stage4cDelayedSlams.length;
+      stage4cUpdateDelayedSlams(.45);
+      result.hammer={...hammerData,gunDamage:player.attackDamage,
+        gunKnockback:player.knockback,hit,afterShot,pending,
+        afterEcho:hammerFox.health};
+      return result;
+    });
+    console.log('WEAPON INHERITANCE CHECK',JSON.stringify(inheritance));
+    const si=inheritance.sword, sp=inheritance.spear, hm=inheritance.hammer;
+    if(si.attackDamage!==si.originalDamage||si.chance!==si.originalChance||
+       Math.abs(si.interval-si.expectedInterval)>.0001||si.targets<5||
+       si.shots<6||si.rhythm!==3||si.wave<1)
+      throw Error('Sword -> revolver lost upgrades: '+JSON.stringify(si));
+    if(sp.out!==sp.gunOut||sp.back!==sp.gunBack||sp.pierce!==sp.gunPierce||
+       sp.count!==sp.gunCount||sp.rifleRange<=sp.baseRange||!sp.rifleHit||
+       sp.remaining>=10000)
+      throw Error('Spear -> rifle lost upgrades: '+JSON.stringify(sp));
+    if(hm.gunDamage!==hm.damage||hm.gunKnockback!==hm.knockback||
+       !hm.secondarySlam||!hm.hit||hm.pending!==1||hm.afterEcho>=hm.afterShot)
+      throw Error('Hammer -> shotgun lost upgrades: '+JSON.stringify(hm));
     if(errors.length)throw Error('Runtime errors in capture checks: '+errors.join(' | ').slice(0,2200));
     console.log('PASS: time advances; normal/elite escapes lose the chick, defeating captor rescues it.');
   } finally {await browser.close()}
