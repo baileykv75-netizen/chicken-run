@@ -402,6 +402,45 @@ const { chromium } = require('playwright');
     });
     console.log('SHOP UI CHECK',JSON.stringify(shopUi));
     if(!shopUi.open||!shopUi.closed)throw Error('Coop shop UI regression: '+JSON.stringify(shopUi));
+    const itemEffects=await page.evaluate(()=>{
+      selectedWeapon='sword';resetGame();state='playing';phase4j.solids=[];
+      phase5.gold=1000;
+      const chick=chicks[0];chick.atCoop=false;
+      chick.x=player.x+100;chick.y=player.y+50;
+      player.x=chick.x+15;player.y=chick.y+15;
+      const fox={x:chick.x+45,y:chick.y,radius:14,health:1000000,maxHealth:1000000,
+        type:'normal',xp:0,dead:false,stunnedFor:0,hitFlash:0,carrying:null,target:chick};
+      foxes=[fox];
+      const activated=[],exceptions=[];
+      for(const type of PHASE5_GEAR.filter(t=>t.cooldown>0)){
+        chick.health=25;player.health=25;
+        const item={uid:-1,id:type.id,level:3,ownerId:chick.id,cooldown:0};
+        const previousEquipment=chick.equipment;
+        chick.equipment=[];phase5Arsenal.items.push(item);
+        chick.equipment=[item.uid];
+        try{
+          const yes=phase5GearActive(chick,item);
+          activated.push({id:type.id,yes});
+        }catch(error){exceptions.push({id:type.id,error:String(error)})}
+        phase5Arsenal.items.pop();chick.equipment=previousEquipment;
+      }
+      const armor=phase5AddItem('armor',3);
+      chick.equipment=[armor.uid];armor.ownerId=chick.id;
+      phase5RefreshChickHp(chick);
+      const armoredMax=chick.maxHealth,damageReduction=phase5GearDamageReduction(chick);
+      const phoenix=phase5AddItem('phoenix',3);
+      chick.equipment=[phoenix.uid];phoenix.ownerId=chick.id;
+      phase5RefreshChickHp(chick);
+      chick.health=5;chick.invulnerableFor=0;
+      phase5TryAttackChick(fox,chick);
+      const phoenixSave=chick.health>0&&chick.phase5PhoenixUsed&&!chick.downedFor;
+      return {activated,exceptions,armoredMax,damageReduction,phoenixSave};
+    });
+    console.log('GEAR EFFECT CHECK',JSON.stringify(itemEffects));
+    if(itemEffects.exceptions.length||itemEffects.activated.length!==16||
+      itemEffects.activated.some(x=>!x.yes)||itemEffects.armoredMax<=100||
+      itemEffects.damageReduction<=0||!itemEffects.phoenixSave)
+      throw Error('Gear effect runtime failure: '+JSON.stringify(itemEffects));
     if(errors.length)throw Error('Runtime errors in capture checks: '+errors.join(' | ').slice(0,2200));
     console.log('PASS: time advances; normal/elite escapes lose the chick, defeating captor rescues it.');
   } finally {await browser.close()}
