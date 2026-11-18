@@ -120,6 +120,46 @@ const { chromium } = require('playwright');
          && result.maxSideways<65)
         throw Error('Escape did not actually detour around the obstacle: '+JSON.stringify(result));
     }
+    // Regression: spear displacement must never follow enemy auto-aim.
+    const spearDirectionCheck=await page.evaluate(()=>{
+      resetGame();state='playing';player.weapon='spear';
+      player.attackRange=260;player.dashEvery=1;player.spearThrows=0;
+      player.spearBusy=false;player.spearCount=1;
+      const fox={x:player.x+90,y:player.y,radius:14,health:100,maxHealth:100,
+        type:'normal',dead:false,stunnedFor:0,hitFlash:0};
+      foxes=[fox];
+      const observed=[];
+      const originalDash=performSpearDash;
+      performSpearDash=(direction)=>observed.push({x:direction.x,y:direction.y});
+      try {
+        // The input is left, but auto-aim points right toward the fox.
+        keys.add('a');getMovementInput();
+        performSpearAttack();
+        const moving={dash:observed.at(-1),aim:{...player.facing}};
+        keys.delete('a');getMovementInput();
+        // The idle fallback uses last actual input, even after facing updates.
+        spearShots=[];player.spearBusy=false;
+        performSpearAttack();
+        const idle={dash:observed.at(-1),aim:{...player.facing}};
+        // Rifle evolution used to override the movement choice entirely.
+        player.gunMode=true;player.gunArchetype='rifle';
+        player.damageOut=20;player.damageBack=15;player.maxPierce=2;
+        player.spearThrows=0;
+        performRifleAttack();
+        const rifle={dash:observed.at(-1)};
+        return {moving,idle,rifle,count:observed.length};
+      } finally {
+        performSpearDash=originalDash;
+        keys.delete('a');
+      }
+    });
+    console.log('SPEAR DIRECTION CHECK',JSON.stringify(spearDirectionCheck));
+    if(spearDirectionCheck.count!==3||
+      spearDirectionCheck.moving.dash.x>-.9||
+      spearDirectionCheck.idle.dash.x>-.9||
+      spearDirectionCheck.rifle.dash.x>-.9||
+      spearDirectionCheck.moving.aim.x<.9)
+      throw Error('Dash followed the enemy rather than movement: '+JSON.stringify(spearDirectionCheck));
     if(errors.length)throw Error('Runtime errors in capture checks: '+errors.join(' | ').slice(0,2200));
     console.log('PASS: time advances; normal/elite escapes lose the chick, defeating captor rescues it.');
   } finally {await browser.close()}
