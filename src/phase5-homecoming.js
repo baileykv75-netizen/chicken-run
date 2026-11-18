@@ -20,6 +20,30 @@ phase5Status.id = 'phase5Status';
 phase5Status.style.cssText = 'position:fixed;right:14px;top:243px;z-index:8;padding:7px 9px;border-radius:9px;background:#f7edd9e8;color:#483c2d;font:700 13px sans-serif;pointer-events:none';
 document.querySelector('#app').appendChild(phase5Status);
 
+// Every deployed chick has its own HP. No awakened/cultivated immunity.
+// Repeated fox contact is throttled, but there is no automatic regeneration.
+function phase5TryAttackChick(fox, chick) {
+  if (!chick || chick.atCoop || chick.lost || chick.carriedBy) return;
+  chick.maxHealth ??= 100;
+  chick.health ??= chick.maxHealth;
+  if ((chick.downedFor || 0)>0 || (chick.invulnerableFor || 0)>0) return;
+  if (chick.health>0) {
+    chick.health=Math.max(0,chick.health-(fox.type==='brute'?34:fox.phase4gKind?30:22));
+    chick.invulnerableFor=.8;
+    addParticles(chick.x,chick.y,'!',2);
+    if(chick.health===0) {
+      chick.downedFor=2.2;
+      phase4iMessage('小鸡倒地！赶快击退狐狸救援');
+    }
+    return;
+  }
+  fox.carrying=chick;
+  chick.carriedBy=fox;
+  chick.downedFor=0;
+  fox.target=null;
+  addParticles(fox.x,fox.y,'!',2);
+  playTone(170,.1,.04,'sawtooth');
+}
 function phase5Coop() { return phase4iCoop(); }
 function phase5SafeCount() { return chicks.filter(c => c.atCoop && !c.lost).length; }
 function phase5NearCoop() {
@@ -133,7 +157,14 @@ resetGame = function resetPhase5() {
 const phase5UpdateChicksBase = updateChicks;
 updateChicks = function updatePhase5Chicks(dt) {
   const all=chicks;
-  chicks=all.filter(c=>!c.atCoop);
+  for (const c of all) {
+    if (c.atCoop || c.lost) continue;
+    c.maxHealth ??= 100;
+    c.health ??= c.maxHealth;
+    c.invulnerableFor=Math.max(0,(c.invulnerableFor||0)-dt);
+    c.downedFor=Math.max(0,(c.downedFor||0)-dt);
+  }
+  chicks=all.filter(c=>!c.atCoop&&!c.downedFor);
   try { phase5UpdateChicksBase(dt); }
   finally { chicks=all; }
 };
@@ -225,6 +256,18 @@ drawWorld = function drawPhase5World() {
   phase5DrawBase();
   const coop=phase5Coop();
   context.save();
+  // HP indicators: visible even for non-cultivated chicks in danger.
+  for(const chick of chicks) {
+    if(chick.lost || chick.atCoop || chick.carriedBy)continue;
+    const fraction=Math.max(0,(chick.health??100)/(chick.maxHealth||100));
+    context.fillStyle='#4d4539';context.fillRect(chick.x-15,chick.y-23,30,5);
+    context.fillStyle=fraction>.35?'#80b377':'#d87c66';
+    context.fillRect(chick.x-14,chick.y-22,28*fraction,3);
+    if(chick.downedFor>0) {
+      context.font='bold 12px sans-serif';context.textAlign='center';
+      context.fillStyle='#aa574a';context.fillText('救援!',chick.x,chick.y-32);
+    }
+  }
   context.strokeStyle='rgba(112,137,81,.7)';
   context.lineWidth=3;
   context.beginPath();context.arc(coop.x,coop.y,PHASE4I.deliveryRadius,0,Math.PI*2);context.stroke();
@@ -270,6 +313,11 @@ draw = function drawPhase5Screen() {
 const phase5DefeatBase = defeatFox;
 defeatFox = function defeatPhase5Fox(fox) {
   const wasAlive=!fox.dead;
+  const rescued=fox.carrying;
   phase5DefeatBase(fox);
+  if (rescued && fox.dead && !rescued.lost) {
+    rescued.health=Math.max(18,rescued.health||0);
+    rescued.downedFor=0;rescued.invulnerableFor=1.2;
+  }
   if (wasAlive && fox.dead) phase5.gold+=fox.phase4gKind==='boss'?25:fox.phase4gKind?8:fox.type==='brute'?4:fox.type==='swift'?2:1;
 };
