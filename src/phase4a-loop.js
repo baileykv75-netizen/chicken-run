@@ -87,6 +87,7 @@ updateFoxes = function updateBalancedFoxes(deltaTime) {
     if (
       !fox.carrying &&
       fox.target &&
+      !fox.target.phase5Dummy &&
       (fox.target.protectedFor || 0) <= 0 &&
       circlesOverlap(fox, fox.target, 2)
     ) {
