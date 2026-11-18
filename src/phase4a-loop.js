@@ -90,11 +90,7 @@ updateFoxes = function updateBalancedFoxes(deltaTime) {
       (fox.target.protectedFor || 0) <= 0 &&
       circlesOverlap(fox, fox.target, 2)
     ) {
-      fox.carrying = fox.target;
-      fox.target.carriedBy = fox;
-      fox.target = null;
-      addParticles(fox.x, fox.y, '!', 2);
-      playTone(170, 0.1, 0.04, 'sawtooth');
+      phase5TryAttackChick(fox, fox.target);
     }
 
     if (circlesOverlap(fox, player) && player.invulnerableFor <= 0) {
@@ -155,8 +151,9 @@ update = function updateEndlessGame(deltaTime) {
   cameraShake = Math.max(0, cameraShake - deltaTime * 30);
   updateHud();
 
-  const alive = chicks.filter((chick) => !chick.lost).length;
-  if (alive <= 0) finishGame();
+  // Phase 5: losing the last escort is not an instant defeat. The player can
+  // still rescue another chick or recover an egg and return to the coop.
+  if (player.health <= 0 && state === 'playing') finishGame();
 };
 
 updateBestText();

@@ -6,8 +6,7 @@ nearestAvailableChick = function nearestStage4bChick(fox) {
     if (
       chick.lost ||
       chick.carriedBy ||
-      chick.scouting ||
-      chick.awakened ||
+      chick.atCoop ||
       (chick.protectedFor || 0) > 0
     ) continue;
     const candidateDistance = distanceSquared(fox, chick);
