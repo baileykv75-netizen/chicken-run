@@ -376,3 +376,120 @@ update=function updatePhase4jTerrain(dt) {
     phase4jMoveEntity(chick,nx,ny,chick.radius||10);
   }
 };
+
+// Capturing a chick uses a committed, obstacle-aware exit path. The previous
+// implementation recomputed the nearest map edge every frame, aimed outside
+// the navigable world, and oscillated at corners / obstacle edges.
+function phase4jPlanEscape(fox) {
+  const radius=fox.radius||14, clearance=radius+3;
+  const cols=Math.ceil(world.width/PHASE4J.cell);
+  const rows=Math.ceil(world.height/PHASE4J.cell);
+  const valid=new Uint8Array(cols*rows);
+  const cx=i=>Math.min(world.width-clearance,Math.floor(i%cols)*PHASE4J.cell+PHASE4J.cell/2);
+  const cy=i=>Math.min(world.height-clearance,Math.floor(i/cols)*PHASE4J.cell+PHASE4J.cell/2);
+  for(let i=0;i<valid.length;i++)valid[i]=phase4jClear(cx(i),cy(i),clearance)?1:0;
+  // Find a node reachable from the current physical fox position, even when
+  // its current grid cell is classified as blocked by coarse rasterization.
+  let start=-1,startDist=Infinity;
+  const gx=Math.floor(fox.x/PHASE4J.cell),gy=Math.floor(fox.y/PHASE4J.cell);
+  for(let y=Math.max(0,gy-3);y<=Math.min(rows-1,gy+3);y++)
+    for(let x=Math.max(0,gx-3);x<=Math.min(cols-1,gx+3);x++){
+      const i=y*cols+x,d=Math.hypot(cx(i)-fox.x,cy(i)-fox.y);
+      if(valid[i]&&d<startDist&&phase4jLineClear(fox.x,fox.y,cx(i),cy(i),clearance)){
+        start=i;startDist=d;
+      }
+    }
+  const inset=radius+5;
+  const exits=[];
+  for(let y=0;y<rows;y++)for(const x of [0,cols-1]) {
+    const i=y*cols+x;
+    const point={x:x===0?inset:world.width-inset,y:cy(i)};
+    if(valid[i]&&phase4jClear(point.x,point.y,clearance)
+      &&phase4jLineClear(cx(i),cy(i),point.x,point.y,clearance))
+      exits.push({i,point});
+  }
+  for(let x=0;x<cols;x++)for(const y of [0,rows-1]){
+    const i=y*cols+x;
+    const point={x:cx(i),y:y===0?inset:world.height-inset};
+    if(valid[i]&&phase4jClear(point.x,point.y,clearance)
+      &&phase4jLineClear(cx(i),cy(i),point.x,point.y,clearance))
+      exits.push({i,point});
+  }
+  if(start>=0&&exits.length){
+    const distance=new Int32Array(valid.length).fill(-1);
+    const parents=new Int32Array(valid.length).fill(-1);
+    const queue=new Int32Array(valid.length);let head=0,tail=0;
+    queue[tail++]=start;distance[start]=0;
+    while(head<tail){
+      const i=queue[head++],x=i%cols,y=(i/cols)|0;
+      for(const next of [x>0?i-1:-1,x<cols-1?i+1:-1,y>0?i-cols:-1,y<rows-1?i+cols:-1]){
+        if(next<0||!valid[next]||distance[next]>=0)continue;
+        // Check the actual segment: adjacent cells can straddle the ends of logs.
+        if(!phase4jLineClear(cx(i),cy(i),cx(next),cy(next),clearance))continue;
+        distance[next]=distance[i]+1;parents[next]=i;queue[tail++]=next;
+      }
+    }
+    let best=null,score=Infinity;
+    for(const candidate of exits){
+      const n=distance[candidate.i];if(n<0)continue;
+      const cost=(n*PHASE4J.cell)+startDist+
+        Math.hypot(candidate.point.x-cx(candidate.i),candidate.point.y-cy(candidate.i));
+      if(cost<score){score=cost;best=candidate;}
+    }
+    if(best){
+      const nodes=[];
+      for(let i=best.i;i!==start&&i>=0;i=parents[i])nodes.push({x:cx(i),y:cy(i)});
+      nodes.reverse();nodes.push(best.point);
+      fox.phase4jEscape={target:best.point,path:nodes,stuckFor:0,lastX:fox.x,lastY:fox.y};
+      return;
+    }
+  }
+  // Defensive fallback: still make progress to a stable in-bounds exit instead
+  // of recalculating an outside-world direction every frame.
+  const edge=nearestWorldEdgeVector(fox.x,fox.y);
+  const point={x:edge.x<0?inset:edge.x>0?world.width-inset:clamp(fox.x,inset,world.width-inset),
+    y:edge.y<0?inset:edge.y>0?world.height-inset:clamp(fox.y,inset,world.height-inset)};
+  fox.phase4jEscape={target:point,path:[point],stuckFor:0,lastX:fox.x,lastY:fox.y};
+}
+function phase4jFinishCapture(fox) {
+  const chick=fox.carrying;
+  if(!chick)return;
+  chick.lost=true;chick.carriedBy=null;fox.carrying=null;
+  fox.dead=true;fox.health=0;fox.phase4jEscape=null;
+  addParticles(fox.x,fox.y,'💨',4);
+  playTone(130,.12,.045,'sawtooth');
+}
+function phase4jUpdateCarryingFox(fox,dt,speedScale=1.08) {
+  if(!fox.carrying)return false;
+  if(!fox.phase4jEscape)phase4jPlanEscape(fox);
+  const plan=fox.phase4jEscape;
+  const r=fox.radius||14,clearance=r+2;
+  // Shortcut only when the segment is unobstructed; otherwise follow the
+  // stable breadth-first path instead of repeatedly choosing opposite tangents.
+  while(plan.path.length>1
+    && phase4jLineClear(fox.x,fox.y,plan.path[1].x,plan.path[1].y,clearance))
+    plan.path.shift();
+  while(plan.path.length>1 && Math.hypot(fox.x-plan.path[0].x,fox.y-plan.path[0].y)<12)
+    plan.path.shift();
+  const waypoint=plan.path[0]||plan.target;
+  const dx=waypoint.x-fox.x,dy=waypoint.y-fox.y,d=Math.hypot(dx,dy);
+  if(d>0.01){
+    const velocity=Math.min(d,fox.speed*speedScale*dt);
+    const x=fox.x,y=fox.y;
+    phase4jMoveEntity(fox,x+dx/d*velocity,y+dy/d*velocity,r);
+    const moved=Math.hypot(fox.x-x,fox.y-y);
+    if(moved>.001)fox.phase4jEscapeFacing={x:(fox.x-x)/moved,y:(fox.y-y)/moved};
+    plan.stuckFor=moved<.15?plan.stuckFor+dt:0;
+  }
+  // Replan only after a sustained stall. Prevents side-switch jitter.
+  if(plan.stuckFor>1.2) {
+    fox.phase4jEscape=null;
+    phase4jPlanEscape(fox);
+  }
+  fox.carrying.x=fox.x;fox.carrying.y=fox.y+14;
+  if(Math.hypot(fox.x-plan.target.x,fox.y-plan.target.y)<11) {
+    phase4jFinishCapture(fox);
+    return true;
+  }
+  return false;
+}
