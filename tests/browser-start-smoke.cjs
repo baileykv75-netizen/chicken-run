@@ -60,6 +60,61 @@ const { chromium } = require('playwright');
       throw Error('Elite fox failed to escape: '+JSON.stringify(captureCheck));
     if(captureCheck.rescued.lost||captureCheck.rescued.carried||!captureCheck.rescued.dead)
       throw Error('Defeating captor failed to rescue chick: '+JSON.stringify(captureCheck));
+    // Long-lived capture regression: move real foxes through the normal
+    // movement code for multiple seconds, including a rock/log blocking the
+    // nearest exit. Previous one-frame edge tests missed the tug-of-war.
+    const flightChecks=await page.evaluate(()=>{
+      const scenarios=[
+        {name:'open ordinary',kind:'normal',obstacles:[]},
+        {name:'open elite',kind:'elite',obstacles:[]},
+        {name:'rock ordinary',kind:'normal',obstacles:[
+          {kind:'rock',x:1250,y:450,r:55}]},
+        {name:'log ordinary',kind:'normal',obstacles:[
+          {kind:'log',ax:1160,ay:520,bx:1340,by:520,r:17}]},
+        {name:'rock elite',kind:'elite',obstacles:[
+          {kind:'rock',x:1250,y:450,r:55}]},
+        {name:'near visual fence',kind:'normal',obstacles:[],x:world.width/2,y:world.height-250},
+      ];
+      return scenarios.map(config=>{
+        resetGame();state='playing';
+        phase4j.solids=config.obstacles;
+        const chick=chicks[0],r=config.kind==='elite'?17:14;
+        const fox={
+          x:config.x??world.width/2,y:config.y??world.height/2,
+          radius:r,speed:165,health:90,maxHealth:90,type:'normal',
+          xp:1,target:null,carrying:chick,stunnedFor:0,hitFlash:0,dead:false,
+        };
+        if(config.kind==='elite'){
+          fox.phase4gKind='stalker';fox.phase4gMode='pursue';
+          fox.phase4gClock=0;fox.phase4gCooldown=4;
+          fox.phase4gFacing={x:-1,y:0};
+        }
+        foxes=[fox];chick.carriedBy=fox;
+        let steps=0,turns=0,idleFrames=0,lastDirection=null,maxIdle=0;
+        for(;steps<1000&&!chick.lost;steps++){
+          const px=fox.x,py=fox.y;
+          updateFoxes(.033);
+          const distance=Math.hypot(fox.x-px,fox.y-py);
+          if(distance<.12)idleFrames++;else idleFrames=0;
+          maxIdle=Math.max(maxIdle,idleFrames);
+          if(distance>.15){
+            const vx=(fox.x-px)/distance,vy=(fox.y-py)/distance;
+            if(lastDirection&&vx*lastDirection.x+vy*lastDirection.y<-.5)turns++;
+            lastDirection={x:vx,y:vy};
+          }
+        }
+        return {name:config.name,steps,escaped:chick.lost,
+          stillCarried:!!chick.carriedBy,turns,maxIdle,
+          exit:fox.phase4jEscape?.target||null};
+      });
+    });
+    console.log('FLIGHT CHECK',JSON.stringify(flightChecks));
+    for(const result of flightChecks) {
+      if(!result.escaped||result.stillCarried||result.steps>=1000)
+        throw Error('Captor failed to finish flight: '+JSON.stringify(result));
+      if(result.maxIdle>80||result.turns>15)
+        throw Error('Captor stuttered excessively: '+JSON.stringify(result));
+    }
     if(errors.length)throw Error('Runtime errors in capture checks: '+errors.join(' | ').slice(0,2200));
     console.log('PASS: time advances; normal/elite escapes lose the chick, defeating captor rescues it.');
   } finally {await browser.close()}
