@@ -47,7 +47,7 @@ const { chromium } = require('playwright');
           fox.health=0;defeatFox(fox);
           return {lost:chick.lost,carried:!!chick.carriedBy,dead:fox.dead};
         }
-        updateFoxes(.016);
+        for(let step=0;step<120&&!chick.lost;step++)updateFoxes(.033);
         return {lost:chick.lost,carried:!!chick.carriedBy,dead:fox.dead};
       }
       return {normalEscape:trial('normal'),eliteEscape:trial('elite'),
