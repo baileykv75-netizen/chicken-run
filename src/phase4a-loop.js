@@ -63,22 +63,8 @@ updateFoxes = function updateBalancedFoxes(deltaTime) {
     let targetY;
 
     if (fox.carrying) {
-      const edge = nearestWorldEdgeVector(fox.x, fox.y);
-      targetX = fox.x + edge.x * 160;
-      targetY = fox.y + edge.y * 160;
-
-      const escapeMargin = (fox.radius || 14) + 1;
-      if (fox.x <= escapeMargin || fox.x >= world.width - escapeMargin ||
-          fox.y <= escapeMargin || fox.y >= world.height - escapeMargin) {
-        fox.carrying.lost = true;
-        fox.carrying.carriedBy = null;
-        fox.carrying = null;
-        fox.dead = true;
-        fox.health = 0;
-        addParticles(clamp(fox.x, 0, world.width), clamp(fox.y, 0, world.height), '💨', 4);
-        playTone(130, 0.12, 0.045, 'sawtooth');
-        continue;
-      }
+      phase4jUpdateCarryingFox(fox, deltaTime);
+      continue;
     } else {
       if (
         !fox.target ||
