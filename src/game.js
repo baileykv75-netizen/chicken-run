@@ -1283,7 +1283,7 @@ function drawChick(chick) {
 function drawFox(fox) {
   context.save();
   context.translate(fox.x, fox.y);
-  const target = fox.carrying ? nearestWorldEdgeVector(fox.x, fox.y) : fox.target || player;
+  const target = fox.carrying ? (fox.phase4jEscapeFacing || nearestWorldEdgeVector(fox.x, fox.y)) : fox.target || player;
   const angle = fox.carrying
     ? Math.atan2(target.y, target.x)
     : Math.atan2(target.y - fox.y, target.x - fox.x);
