@@ -90,11 +90,7 @@ updateFoxes = function updateBalancedFoxes(deltaTime) {
       (fox.target.protectedFor || 0) <= 0 &&
       circlesOverlap(fox, fox.target, 2)
     ) {
-      fox.carrying = fox.target;
-      fox.target.carriedBy = fox;
-      fox.target = null;
-      addParticles(fox.x, fox.y, '!', 2);
-      playTone(170, 0.1, 0.04, 'sawtooth');
+      phase5TryAttackChick(fox, fox.target);
     }
 
     if (circlesOverlap(fox, player) && player.invulnerableFor <= 0) {
