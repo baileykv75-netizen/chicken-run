@@ -197,6 +197,10 @@ const { chromium } = require('playwright');
         pierce:player.maxPierce,count:player.spearCount,projectileSpeed:player.projectileSpeed};
       activateGunWorldline();
       const rifleRange=stage4bRifleRange(),baseRange=Math.max(390,player.attackRange*1.35);
+      // Two volley rays can straddle a distant central target; independently
+      // verify the inherited range using the centre barrel, retaining the
+      // learned volley count in the stats snapshot above.
+      player.spearCount=1;
       const target=foxAt((rifleRange+baseRange)/2);foxes=[target];
       const rifleHit=performRifleAttack();
       result.spear={...spearData,gunOut:player.damageOut,gunBack:player.damageBack,
