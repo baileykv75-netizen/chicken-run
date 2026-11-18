@@ -60,7 +60,11 @@ function phase5TriggerAmbush() {
   playTone(230,.18,.055,'sawtooth');
 }
 function phase5Deliver() {
-  if (!phase5NearCoop()) return;
+  if (!phase5NearCoop()) {
+    // A deployed chick has now left the yard and can be delivered on return.
+    for (const chick of chicks) chick.phase5Departing = false;
+    return;
+  }
   let delivered = 0;
   if (phase5.carried) {
     phase5.carried = null;
@@ -76,7 +80,7 @@ function phase5Deliver() {
     phase4i.deliveries++;
   }
   for (const chick of chicks) {
-    if (chick.lost || chick.atCoop || chick.carriedBy) continue;
+    if (chick.lost || chick.atCoop || chick.carriedBy || chick.phase5Departing) continue;
     chick.atCoop = true;
     chick.x = phase5Coop().x + 18 + Math.random()*22;
     chick.y = phase5Coop().y + 12 + Math.random()*23;
@@ -196,7 +200,8 @@ phase5CoopButton.addEventListener('click',()=>{
   } else {
     const stored=chicks.find(c=>c.atCoop&&!c.lost);
     if(stored) {
-      stored.atCoop=false;stored.x=player.x+30;stored.y=player.y+30;
+      stored.atCoop=false;stored.phase5Departing=true;
+      stored.x=player.x+30;stored.y=player.y+30;
       phase4iMessage('小鸡出征！野外有被抓走的风险');
     }
   }
