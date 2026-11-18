@@ -279,6 +279,7 @@ function createPlayer() {
     invulnerableFor: 0,
     facing: { x: 1, y: 0 },
     moving: { x: 0, y: 0 },
+    lastMoveDirection: { x: 1, y: 0 },
     weapon: selectedWeapon,
     attackInterval: definition.attackInterval,
     attackRange: definition.range,
@@ -738,6 +739,16 @@ function getAttackDirection(target) {
   return player.facing;
 }
 
+// Dash direction is movement intent, never an auto-target direction.
+// During movement use current input; when idle use the last input direction.
+// A player who never moved uses the default rightward facing direction.
+function getSpearDashDirection() {
+  const moving = player?.moving || { x: 0, y: 0 };
+  if (Math.hypot(moving.x, moving.y) > 0.08)
+    return normalized(moving.x, moving.y);
+  return player?.lastMoveDirection || { x: 1, y: 0 };
+}
+
 function performSwordAttack(extra = false) {
   const target = nearestLivingFox(player.attackRange + 12);
   if (!target) return false;
@@ -810,9 +821,7 @@ function performSpearAttack() {
   player.spearThrows += 1;
 
   if (player.dashEvery > 0 && player.spearThrows % player.dashEvery === 0) {
-    const dashDirection = Math.hypot(player.moving.x, player.moving.y) > 0.08
-      ? normalized(player.moving.x, player.moving.y)
-      : direction;
+    const dashDirection = getSpearDashDirection();
     performSpearDash(dashDirection);
   }
 
@@ -886,7 +895,12 @@ function getMovementInput() {
     x /= length;
     y /= length;
   }
-  if (Math.hypot(x, y) > 0.08) player.facing = normalized(x, y);
+  if (Math.hypot(x, y) > 0.08) {
+    const direction = normalized(x, y);
+    player.facing = direction;
+    // Keep actual movement intent separate from auto-aim facing.
+    player.lastMoveDirection = direction;
+  }
   player.moving = { x, y };
   return { x, y };
 }

@@ -59,9 +59,7 @@ performSpearAttack = function performStage4eSpearVolley() {
   player.spearThrows += 1;
 
   if (player.dashEvery > 0 && player.spearThrows % player.dashEvery === 0) {
-    const dashDirection = Math.hypot(player.moving.x, player.moving.y) > 0.08
-      ? normalized(player.moving.x, player.moving.y)
-      : direction;
+    const dashDirection = getSpearDashDirection();
     performSpearDash(dashDirection);
   }
 

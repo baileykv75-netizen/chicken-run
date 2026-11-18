@@ -95,7 +95,7 @@ performRifleAttack = function performStage4eVolleyRifleAttack() {
 
   player.spearThrows += 1;
   if (player.dashEvery > 0 && player.spearThrows % player.dashEvery === 0) {
-    performSpearDash(baseDirection);
+    performSpearDash(getSpearDashDirection());
   }
   player.facing = baseDirection;
   playTone(560 + count * 16, 0.065, 0.043, 'square');
