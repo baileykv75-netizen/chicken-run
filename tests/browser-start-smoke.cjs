@@ -174,7 +174,7 @@ const { chromium } = require('playwright');
       }
       const result={};
       selectedWeapon='sword';resetGame();state='playing';phase4j.solids=[];
-      upgrade('damage');upgrade('rate');upgrade('sword-double');
+      upgrade('damage');upgrade('rate');upgrade('sword-double');upgrade('sword-knock');
       stage4cApplyOverlimit('sword-ring');
       const swordBase=player.attackDamage,swordChance=player.doubleSlashChance;
       const swordSpeed=player.attackInterval/WEAPONS.sword.attackInterval;
@@ -226,7 +226,7 @@ const { chromium } = require('playwright');
     console.log('WEAPON INHERITANCE CHECK',JSON.stringify(inheritance));
     const si=inheritance.sword, sp=inheritance.spear, hm=inheritance.hammer;
     if(si.attackDamage!==si.originalDamage||si.chance!==si.originalChance||
-       Math.abs(si.interval-si.expectedInterval)>.0001||si.targets<5||
+       Math.abs(si.interval-si.expectedInterval)>.0001||si.targets<6||
        si.shots<6||si.rhythm!==3||si.wave<1)
       throw Error('Sword -> revolver lost upgrades: '+JSON.stringify(si));
     if(sp.out!==sp.gunOut||sp.back!==sp.gunBack||sp.pierce!==sp.gunPierce||
