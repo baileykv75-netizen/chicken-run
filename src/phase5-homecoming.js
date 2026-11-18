@@ -163,8 +163,20 @@ updateChicks = function updatePhase5Chicks(dt) {
     c.health ??= c.maxHealth;
     c.invulnerableFor=Math.max(0,(c.invulnerableFor||0)-dt);
     c.downedFor=Math.max(0,(c.downedFor||0)-dt);
+    if (c.health<=0 && !c.carriedBy) {
+      // Hold position near a downed chick without an adjacent fox to revive it.
+      const nearPlayer=Math.hypot(player.x-c.x,player.y-c.y)<57;
+      const threatened=foxes.some(f=>!f.dead&&f.health>0&&Math.hypot(f.x-c.x,f.y-c.y)<68);
+      c.reviveProgress=nearPlayer&&!threatened
+        ? (c.reviveProgress||0)+dt : 0;
+      if(c.reviveProgress>=1.5){
+        c.health=15;c.reviveProgress=0;c.invulnerableFor=1.5;
+        addParticles(c.x,c.y,'+',5);
+        phase4iMessage('小鸡已被扶起，仅恢复15点生命');
+      }
+    }
   }
-  chicks=all.filter(c=>!c.atCoop&&!c.downedFor);
+  chicks=all.filter(c=>!c.atCoop&&(c.health>0||c.carriedBy));
   try { phase5UpdateChicksBase(dt); }
   finally { chicks=all; }
 };
@@ -263,7 +275,7 @@ drawWorld = function drawPhase5World() {
     context.fillStyle='#4d4539';context.fillRect(chick.x-15,chick.y-23,30,5);
     context.fillStyle=fraction>.35?'#80b377':'#d87c66';
     context.fillRect(chick.x-14,chick.y-22,28*fraction,3);
-    if(chick.downedFor>0) {
+    if((chick.health||0)<=0) {
       context.font='bold 12px sans-serif';context.textAlign='center';
       context.fillStyle='#aa574a';context.fillText('救援!',chick.x,chick.y-32);
     }
