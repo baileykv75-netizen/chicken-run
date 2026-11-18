@@ -163,7 +163,9 @@ function phase4gUpdateElite(fox, dt) {
     phase4gMove(fox, fox.x + edge.x * 150, fox.y + edge.y * 150, dt, 1.08);
     fox.carrying.x = fox.x;
     fox.carrying.y = fox.y + 14;
-    if (fox.x <= 15 || fox.x >= world.width-15 || fox.y <= 15 || fox.y >= world.height-15) {
+    const escapeMargin = (fox.radius || 22) + 1;
+    if (fox.x <= escapeMargin || fox.x >= world.width - escapeMargin ||
+        fox.y <= escapeMargin || fox.y >= world.height - escapeMargin) {
       fox.carrying.lost = true;
       fox.carrying.carriedBy = null;
       fox.carrying = null;

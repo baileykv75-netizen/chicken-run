@@ -26,6 +26,41 @@ const { chromium } = require('playwright');
     if(errors.length)throw Error('Runtime errors: '+errors.join(' | ').slice(0,2200));
     if(info.globalState!=='playing'||info.elapsed<1.5||!info.player||info.chicks<1||info.timer==='00:00')
       throw Error('Game frozen or missing player: '+JSON.stringify(info));
-    console.log('PASS: time moves, player/chick present, no uncaught runtime errors');
+    const captureCheck=await page.evaluate(()=>{
+      function trial(kind,killBeforeEscape=false){
+        resetGame();state='playing';
+        const chick=chicks[0];
+        // A caught chicken is recoverable until the captor actually escapes.
+        const radius=kind==='elite'?17:14;
+        const fox={
+          x:radius,y:world.height/2,radius,speed:125,health:90,maxHealth:90,
+          type:'normal',xp:1,target:null,carrying:chick,
+          stunnedFor:0,hitFlash:0,dead:false,
+        };
+        if(kind==='elite'){
+          fox.phase4gKind='stalker';fox.phase4gMode='pursue';
+          fox.phase4gClock=0;fox.phase4gCooldown=5;
+          fox.phase4gFacing={x:-1,y:0};
+        }
+        foxes.push(fox);chick.carriedBy=fox;
+        if(killBeforeEscape){
+          fox.health=0;defeatFox(fox);
+          return {lost:chick.lost,carried:!!chick.carriedBy,dead:fox.dead};
+        }
+        updateFoxes(.016);
+        return {lost:chick.lost,carried:!!chick.carriedBy,dead:fox.dead};
+      }
+      return {normalEscape:trial('normal'),eliteEscape:trial('elite'),
+        rescued:trial('normal',true)};
+    });
+    console.log('CARRY CHECK',JSON.stringify(captureCheck));
+    if(!captureCheck.normalEscape.lost||captureCheck.normalEscape.carried||!captureCheck.normalEscape.dead)
+      throw Error('Normal fox failed to escape: '+JSON.stringify(captureCheck));
+    if(!captureCheck.eliteEscape.lost||captureCheck.eliteEscape.carried||!captureCheck.eliteEscape.dead)
+      throw Error('Elite fox failed to escape: '+JSON.stringify(captureCheck));
+    if(captureCheck.rescued.lost||captureCheck.rescued.carried||!captureCheck.rescued.dead)
+      throw Error('Defeating captor failed to rescue chick: '+JSON.stringify(captureCheck));
+    if(errors.length)throw Error('Runtime errors in capture checks: '+errors.join(' | ').slice(0,2200));
+    console.log('PASS: time advances; normal/elite escapes lose the chick, defeating captor rescues it.');
   } finally {await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});
