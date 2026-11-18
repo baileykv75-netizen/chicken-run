@@ -460,6 +460,41 @@ const { chromium } = require('playwright');
        mobileInfo.world[0]<3000||mobileInfo.world[1]<4500||
        mobileInfo.mapSize[0]!=='150px'||!mobileInfo.shopButton)
       throw Error('Mobile Phase5 layout/start regression: '+JSON.stringify(mobileInfo));
+    const simplifiedShop=await page.evaluate(()=>{
+      resetGame();state='playing';phase5.gold=220;
+      phase5ShopButton.click();
+      const tabs=[...phase5ShopPanel.querySelectorAll('[data-action^="tab:"]')].map(x=>x.textContent.trim());
+      const equippedPage={slots:phase5ShopPanel.querySelectorAll('.p5-slot').length,
+        hasHealth:!!phase5ShopPanel.querySelector('.p5-hp-track'),
+        gold:phase5ShopPanel.querySelector('.p5-summary')?.textContent};
+      phase5ShopPanel.querySelector('[data-action="tab:buy"]').click();
+      const buying=!!phase5ShopPanel.querySelector('.p5-catalog');
+      const goldBefore=phase5.gold;
+      phase5ShopPanel.querySelector('[data-action="buy:rotary"]').click();
+      const purchased=phase5Arsenal.items.length===1&&phase5.gold<goldBefore;
+      phase5ShopPanel.querySelector('[data-action="tab:equip"]').click();
+      const equipButton=phase5ShopPanel.querySelector('[data-action^="equip:"]');
+      equipButton?.click();
+      const equipped=chicks[0].equipment.length===1&&
+        phase5ShopPanel.querySelectorAll('.p5-slot-name').length===1;
+      phase5ShopPanel.querySelector('[data-action="tab:sell"]').click();
+      const selling=!!phase5ShopPanel.querySelector('.p5-sell-list')&&
+        !!phase5ShopPanel.querySelector('[data-action^="sell:"]');
+      const sale=phase5ShopPanel.querySelector('[data-action^="sell:"]');
+      sale?.click();
+      const sold=phase5Arsenal.items.length===0&&chicks[0].equipment.length===0;
+      phase5ShopPanel.querySelector('[data-action="close"]').click();
+      return {tabs,equippedPage,buying,purchased,equipped,selling,sold,
+        closed:state==='playing'&&!phase5Arsenal.shopOpen};
+    });
+    console.log('SIMPLIFIED SHOP CHECK',JSON.stringify(simplifiedShop));
+    if(simplifiedShop.tabs.length!==3||simplifiedShop.equippedPage.slots!==4||
+       !simplifiedShop.equippedPage.hasHealth||
+       !simplifiedShop.equippedPage.gold?.includes('220')||
+       !simplifiedShop.buying||!simplifiedShop.purchased||
+       !simplifiedShop.equipped||!simplifiedShop.selling||
+       !simplifiedShop.sold||!simplifiedShop.closed)
+      throw Error('Simplified shop regression: '+JSON.stringify(simplifiedShop));
     if(errors.length)throw Error('Runtime errors in capture checks: '+errors.join(' | ').slice(0,2200));
     console.log('PASS: time advances; normal/elite escapes lose the chick, defeating captor rescues it.');
   } finally {await browser.close()}
