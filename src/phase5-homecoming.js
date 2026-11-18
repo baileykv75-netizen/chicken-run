@@ -82,6 +82,8 @@ function phase5Deliver() {
   for (const chick of chicks) {
     if (chick.lost || chick.atCoop || chick.carriedBy || chick.phase5Departing) continue;
     chick.atCoop = true;
+    // Stop enemies from continuing to chase a chick that is now safely home.
+    for (const fox of foxes) if (fox.target === chick) fox.target = null;
     chick.x = phase5Coop().x + 18 + Math.random()*22;
     chick.y = phase5Coop().y + 12 + Math.random()*23;
     delivered++;
@@ -243,7 +245,9 @@ drawWorld = function drawPhase5World() {
 const phase5DrawBaseScreen=draw;
 draw = function drawPhase5Screen() {
   phase5DrawBaseScreen();
-  if (!player) return;
+  phase5Map.style.display = state === 'playing' ? 'block' : 'none';
+  phase5Status.style.display = state === 'playing' ? 'block' : 'none';
+  if (state !== 'playing' || !player) return;
   const ctx=phase5Map.getContext('2d');
   const w=phase5Map.width,h=phase5Map.height;
   ctx.clearRect(0,0,w,h);
