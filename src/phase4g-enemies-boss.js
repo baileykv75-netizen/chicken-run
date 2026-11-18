@@ -126,10 +126,7 @@ function phase4gGrabChick(fox) {
   const chick = phase4gChickTarget(fox);
   if (chick === player || chick.protectedFor > 0 || chick.carriedBy || chick.lost) return;
   if (!circlesOverlap(fox, chick, 3)) return;
-  fox.carrying = chick;
-  chick.carriedBy = fox;
-  fox.target = null;
-  addParticles(fox.x, fox.y, '!', 2);
+  phase5TryAttackChick(fox, chick);
 }
 function phase4gMove(fox, x, y, seconds, speedScale = 1) {
   const dir = phase4jSteer(fox, x, y);
