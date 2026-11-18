@@ -173,6 +173,12 @@ function phase5ShopClose(){
   phase5ShopPanel.style.display='none';
   state='playing';previousTime=performance.now();
 }
+// Escape closes this modal instead of inadvertently resuming the game behind it.
+window.addEventListener('keydown',ev=>{
+  if(phase5Arsenal.shopOpen&&ev.key==='Escape'){
+    ev.preventDefault();ev.stopImmediatePropagation();phase5ShopClose();
+  }
+},true);
 phase5ShopButton.addEventListener('click',()=>{
   if(state!=='playing'||!phase5NearCoop())return;
   phase5Arsenal.shopOpen=true;state='paused';
