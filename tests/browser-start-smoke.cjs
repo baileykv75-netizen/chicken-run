@@ -236,6 +236,46 @@ const { chromium } = require('playwright');
     if(hm.gunDamage!==hm.damage||hm.gunKnockback!==hm.knockback||
        !hm.secondarySlam||!hm.hit||hm.pending!==1||hm.afterEcho>=hm.afterShot)
       throw Error('Hammer -> shotgun lost upgrades: '+JSON.stringify(hm));
+    // Phase 5: map expansion, coop spawn, player-carried eggs, ambush and delivery.
+    const homecoming=await page.evaluate(()=>{
+      selectedWeapon='sword';resetGame();state='playing';
+      const coop=phase5Coop();
+      const initial={world:[world.width,world.height],startDistance:Math.hypot(player.x-coop.x,player.y-coop.y),
+        eggs:phase5.eggs.length,safe:phase5SafeCount(),miniMap:!!document.querySelector('#phase5Map')};
+      const egg=phase5.eggs[0];
+      player.x=egg.x;player.y=egg.y;phase5Deliver();
+      // Exercise the Phase 5 pickup path with update, not an injected carry flag.
+      update(.016);
+      const carried={status:!!phase5.carried,ambush:phase5.runs,wave:waveRemaining,
+        safe:phase5SafeCount()};
+      player.x=coop.x;player.y=coop.y;update(.016);
+      const delivered={safe:phase5SafeCount(),stillCarried:!!phase5.carried};
+      // A newly hatched chick is stored safely, not a target or a follower.
+      const frozen=chicks.find(c=>c.atCoop);
+      const before={x:frozen.x,y:frozen.y};
+      updateChicks(.033);
+      const remains=before.x===frozen.x&&before.y===frozen.y;
+      // Verify no timed victory: a long-running game remains playing.
+      elapsed=901;update(.016);
+      const noTimedWin=state==='playing';
+      // Complete with distinct deliveries, not counting same chicken twice.
+      for(let i=0;i<8;i++){
+        phase5.carried={id:'test'+i};player.x=coop.x;player.y=coop.y;
+        phase5Deliver();
+      }
+      return {initial,carried,delivered,remains,noTimedWin,
+        completed:{state,title:document.querySelector('#resultTitle').textContent,
+          safe:phase5SafeCount()}};
+    });
+    console.log('HOMECOMING CHECK',JSON.stringify(homecoming));
+    if(homecoming.initial.world[0]<4200||homecoming.initial.world[1]<3000||
+      homecoming.initial.startDistance>50||homecoming.initial.eggs!==3||
+      homecoming.initial.safe!==1||!homecoming.initial.miniMap||
+      !homecoming.carried.status||homecoming.carried.ambush!==1||
+      homecoming.carried.wave<1||homecoming.delivered.safe!==2||
+      homecoming.delivered.stillCarried||!homecoming.remains||!homecoming.noTimedWin||
+      homecoming.completed.state!=='result'||homecoming.completed.safe!==10)
+      throw Error('Phase 5 homecoming regression: '+JSON.stringify(homecoming));
     if(errors.length)throw Error('Runtime errors in capture checks: '+errors.join(' | ').slice(0,2200));
     console.log('PASS: time advances; normal/elite escapes lose the chick, defeating captor rescues it.');
   } finally {await browser.close()}
