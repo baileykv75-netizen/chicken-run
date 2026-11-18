@@ -295,6 +295,35 @@ const { chromium } = require('playwright');
     if(!coopDeploy.deployed||!coopDeploy.staysDeployed||
        !coopDeploy.outside||!coopDeploy.returned)
       throw Error('Chick deployment/return bug: '+JSON.stringify(coopDeploy));
+    const chickHealth=await page.evaluate(()=>{
+      resetGame();state='playing';phase4j.solids=[];
+      const coop=phase5Coop();player.x=coop.x+310;player.y=coop.y;
+      const chick=chicks[0];chick.atCoop=false;chick.awakened=true;
+      chick.x=player.x;chick.y=player.y;
+      const fox={x:chick.x,y:chick.y,radius:14,type:'normal',health:100,maxHealth:100,
+        dead:false,stunnedFor:0,hitFlash:0,carrying:null,target:chick};
+      foxes=[fox];
+      phase5TryAttackChick(fox,chick);
+      const first={health:chick.health,carried:!!fox.carrying};
+      phase5TryAttackChick(fox,chick);
+      const sameFrameHealth=chick.health;
+      chick.invulnerableFor=0;
+      for(let i=0;i<4;i++){phase5TryAttackChick(fox,chick);chick.invulnerableFor=0;}
+      const downed={health:chick.health,downTime:chick.downedFor,carried:!!fox.carrying};
+      chick.downedFor=0;
+      phase5TryAttackChick(fox,chick);
+      const captured={carried:fox.carrying===chick,by:chick.carriedBy===fox};
+      defeatFox(fox);
+      const rescued={health:chick.health,carried:!!chick.carriedBy};
+      return {first,sameFrameHealth,downed,captured,rescued};
+    });
+    console.log('CHICK HP CHECK',JSON.stringify(chickHealth));
+    if(chickHealth.first.health!==78||chickHealth.first.carried||
+       chickHealth.sameFrameHealth!==78||chickHealth.downed.health!==0||
+       chickHealth.downed.downTime<1||chickHealth.downed.carried||
+       !chickHealth.captured.carried||!chickHealth.captured.by||
+       chickHealth.rescued.health<18||chickHealth.rescued.carried)
+       throw Error('Deployed chick HP and capture regression: '+JSON.stringify(chickHealth));
     if(errors.length)throw Error('Runtime errors in capture checks: '+errors.join(' | ').slice(0,2200));
     console.log('PASS: time advances; normal/elite escapes lose the chick, defeating captor rescues it.');
   } finally {await browser.close()}
