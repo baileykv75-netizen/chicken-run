@@ -324,6 +324,84 @@ const { chromium } = require('playwright');
        !chickHealth.captured.carried||!chickHealth.captured.by||
        chickHealth.rescued.health<18||chickHealth.rescued.carried)
        throw Error('Deployed chick HP and capture regression: '+JSON.stringify(chickHealth));
+    const arsenalChecks=await page.evaluate(()=>{
+      selectedWeapon='spear';resetGame();state='playing';
+      const chick=chicks[0];
+      const initial={catalog:PHASE5_GEAR.length,gold:phase5.gold,level:chick.trainingLevel,
+        hp:chick.health,max:chick.maxHealth,safe:chick.atCoop,
+        availableSkills:currentSkillDefinitions().map(s=>s.id)};
+      phase5.gold=1500;
+      const purchased=['rotary','storm-spear','hammer','heal','armor','phoenix'].map(id=>phase5BuyGear(id));
+      const items=phase5Arsenal.items.slice();
+      const equipOne=phase5EquipItem(chick,items[0].uid);
+      const level2=phase5UpgradeChick(chick);
+      const oldHealth=chick.health;
+      const upgrade1=phase5UpgradeGear(items[0].uid);
+      const level3=phase5UpgradeChick(chick);
+      const upgrade2=phase5UpgradeGear(items[0].uid);
+      const otherEquip=items.slice(1,4).map(item=>phase5EquipItem(chick,item.uid));
+      const exceedsSlots=!phase5EquipItem(chick,items[4].uid);
+      const stats={level:chick.trainingLevel,health:chick.health,
+        oldHealth,max:chick.maxHealth,slots:chick.equipment.length,
+        weaponLevel:items[0].level,compatible:items[0].level<=chick.trainingLevel,
+        equipOne,level2,level3,upgrade1,upgrade2,otherEquip,exceedsSlots};
+      // Each of the four equipped weapons has its own active cooldown.
+      chick.atCoop=false;chick.x=player.x+65;chick.y=player.y+30;
+      player.x+=270;player.y+=5;
+      const fox={x:chick.x+60,y:chick.y,radius:14,health:100000,
+        maxHealth:100000,type:'normal',dead:false,stunnedFor:0,
+        hitFlash:0,target:chick,carrying:null,xp:0};
+      foxes=[fox];phase5UpdateGearCombat(.033);
+      const combat={damage:100000-fox.health,
+        activeCooldowns:phase5ChickItems(chick).filter(item=>item.cooldown>0).length};
+      // No heal simply for returning to the coop.
+      chick.atCoop=true;chick.health=12;
+      updateChicks(5);
+      const noFreeHeal=chick.health===12;
+      const goldBeforeHeal=phase5.gold;
+      const paidHeal=phase5HealChick(chick);
+      const healed={paidHeal,hp:chick.health,max:chick.maxHealth,
+        spent:goldBeforeHeal-phase5.gold};
+      const saleBefore=phase5.gold;
+      const sold=phase5SellGear(items[4].uid);
+      const saleGain=phase5.gold-saleBefore;
+      // Lost chick takes all 4 equipped items out of inventory.
+      chick.lost=true;
+      phase5RemoveLostGear();
+      const loss={itemsLeft:phase5Arsenal.items.length,slots:chick.equipment.length};
+      // Ensure each catalog item is backed by a real on-hit, combat, or passive effect.
+      const active=PHASE5_GEAR.filter(g=>g.cooldown>0).map(g=>g.id);
+      const passive=PHASE5_GEAR.filter(g=>g.cooldown===0).map(g=>g.id);
+      return {initial,purchased,stats,combat,noFreeHeal,healed,sold,saleGain,
+        loss,active,passive};
+    });
+    console.log('ARSENAL CHECK',JSON.stringify(arsenalChecks));
+    const ar=arsenalChecks;
+    if(ar.initial.catalog!==24||ar.initial.gold!==25||ar.initial.level!==1||
+       ar.initial.availableSkills.includes('chick-awaken')||
+       ar.initial.availableSkills.includes('rogue-cultivation')||
+       !ar.purchased.every(Boolean)||
+       !ar.stats.equipOne||!ar.stats.level2||!ar.stats.level3||
+       !ar.stats.upgrade1||!ar.stats.upgrade2||
+       !ar.stats.otherEquip.every(Boolean)||!ar.stats.exceedsSlots||
+       ar.stats.level!==3||ar.stats.slots!==4||ar.stats.weaponLevel!==3||
+       ar.stats.health!==ar.stats.oldHealth||!ar.stats.compatible||
+       ar.combat.damage<=0||ar.combat.activeCooldowns<2||
+       !ar.noFreeHeal||!ar.healed.paidHeal||
+       ar.healed.hp!==ar.healed.max||ar.healed.spent<=0||
+       !ar.sold||ar.saleGain<=0||ar.loss.itemsLeft!==1||ar.loss.slots!==0||
+       ar.active.length+ar.passive.length!==24)
+      throw Error('Phase 5 arsenal regression: '+JSON.stringify(ar));
+    const shopUi=await page.evaluate(()=>{
+      resetGame();state='playing';
+      phase5ShopButton.click();
+      const open=phase5Arsenal.shopOpen&&state==='paused'&&phase5ShopPanel.style.display==='block';
+      phase5ShopPanel.querySelector('[data-action="close"]').click();
+      const closed=!phase5Arsenal.shopOpen&&state==='playing';
+      return {open,closed};
+    });
+    console.log('SHOP UI CHECK',JSON.stringify(shopUi));
+    if(!shopUi.open||!shopUi.closed)throw Error('Coop shop UI regression: '+JSON.stringify(shopUi));
     if(errors.length)throw Error('Runtime errors in capture checks: '+errors.join(' | ').slice(0,2200));
     console.log('PASS: time advances; normal/elite escapes lose the chick, defeating captor rescues it.');
   } finally {await browser.close()}
