@@ -444,6 +444,22 @@ const { chromium } = require('playwright');
       itemEffects.activated.some(x=>!x.yes)||itemEffects.armoredMax<=100||
       itemEffects.damageReduction<=0||!itemEffects.phoenixSave)
       throw Error('Gear effect runtime failure: '+JSON.stringify(itemEffects));
+    const mobile=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+    mobile.on('pageerror',e=>{errors.push('mobile '+String(e));});
+    await mobile.goto('http://127.0.0.1:8765/',{waitUntil:'load'});
+    await mobile.click('#startButton');
+    const mobileInfo=await mobile.evaluate(()=>({
+      game:state,eggs:phase5.eggs.length,
+      world:[world.width,world.height],
+      mapSize:[phase5Map.style.width,phase5Map.style.height],
+      shopButton:!!document.querySelector('#phase5ShopButton'),
+    }));
+    console.log('MOBILE PHASE5 CHECK',JSON.stringify(mobileInfo));
+    await mobile.close();
+    if(mobileInfo.game!=='playing'||mobileInfo.eggs!==3||
+       mobileInfo.world[0]<3000||mobileInfo.world[1]<4500||
+       mobileInfo.mapSize[0]!=='150px'||!mobileInfo.shopButton)
+      throw Error('Mobile Phase5 layout/start regression: '+JSON.stringify(mobileInfo));
     if(errors.length)throw Error('Runtime errors in capture checks: '+errors.join(' | ').slice(0,2200));
     console.log('PASS: time advances; normal/elite escapes lose the chick, defeating captor rescues it.');
   } finally {await browser.close()}
