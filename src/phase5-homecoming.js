@@ -141,6 +141,34 @@ nearestAvailableChick = function phase5NearestOutside(fox) {
 // No instant loss because all the surviving chickens are safely in the coop.
 // The existing game update has an old 'no living chickens' failure case,
 // but 1+ safe chicks remain represented in the chick array.
+// Phase 5 difficulty follows homecoming progress, never unlimited elapsed time.
+// The ordinary director's periodic waves and three-minute bosses would undermine
+// the new one-goal egg ambush loop; keep regular roaming foxes for XP and gold.
+updateDirector = function updatePhase5Director(dt) {
+  dangerLevel=Math.min(6,1+Math.floor(phase5SafeCount()/2));
+  if (phase4f) {
+    phase4f.phase=phase5SafeCount()>=7?'hard':phase5SafeCount()>=4?'threat':'easy';
+    // Director diagnostics still run in the normal update chain.
+    phase4f.activeBuff=null;
+  }
+  if (waveNoticeTimer>0) {
+    waveNoticeTimer=Math.max(0,waveNoticeTimer-dt);
+    if (waveNoticeTimer===0) ui.waveNotice.classList.add('hidden');
+  }
+  if (waveRemaining>0) {
+    waveSpawnTimer-=dt;
+    if (waveSpawnTimer<=0 && foxes.length<currentFoxLimit()) {
+      const forced=waveRemaining%5===0?'brute':waveRemaining%3===0?'swift':null;
+      if(spawnFox(forced))waveRemaining--;
+      waveSpawnTimer=.28;
+    }
+  }
+  spawnTimer-=dt;
+  if (spawnTimer<=0 && foxes.length<currentFoxLimit()) {
+    spawnFox();
+    spawnTimer=Math.max(2,3.4-phase5SafeCount()*.14);
+  }
+};
 const phase5UpdateBase = update;
 update = function updatePhase5(dt) {
   phase5UpdateBase(dt);
