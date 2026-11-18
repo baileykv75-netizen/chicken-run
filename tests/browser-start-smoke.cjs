@@ -413,6 +413,9 @@ const { chromium } = require('playwright');
       foxes=[fox];
       const activated=[],exceptions=[];
       for(const type of PHASE5_GEAR.filter(t=>t.cooldown>0)){
+        // Isolate each ability: previous knockback must not move the fox outside
+        // the next weapon's effective reach.
+        fox.x=chick.x+35;fox.y=chick.y;fox.stunnedFor=0;
         chick.health=25;player.health=25;
         const item={uid:-1,id:type.id,level:3,ownerId:chick.id,cooldown:0};
         const previousEquipment=chick.equipment;
