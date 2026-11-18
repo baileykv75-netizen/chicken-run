@@ -22,7 +22,6 @@ let phase4lEffects = [];
 let phase4lSerial = 0;
 let phase4lPrevEgg = null;
 let phase4lPrevGrabbed = new Set();
-let phase4lLastMode = '';
 function phase4lQualityCap() {
   if (typeof stage4cLowFxMode !== 'undefined' && stage4cLowFxMode) return PHASE4L.lowFxCap;
   if (typeof isTouchDevice === 'function' && isTouchDevice()) return PHASE4L.mobileCap;
@@ -198,6 +197,21 @@ resolveHammerAttack=function phase4lHammerImpact(){
 const phase4lBaseDrawWorld=drawWorld;
 drawWorld=function phase4lDrawWorld(){
   phase4lBaseDrawWorld();
+  // Existing boss telegraph shapes stay intact; a restrained pulse reinforces
+  // the dangerous wind-up without inventing a new mechanic.
+  for(const fox of foxes){
+    if(!fox.phase4gKind || fox.dead || !phase4lVisible(fox.x,fox.y,160))continue;
+    if(!['chargeTell','swipeTell','windup'].includes(fox.phase4gMode))continue;
+    context.save();
+    context.translate(fox.x,fox.y);
+    const pulse=.4+.3*Math.sin(elapsed*11)**2;
+    const r=fox.phase4gKind==='boss'?Math.min(90,(fox.radius||35)*2.3):38;
+    context.globalAlpha=pulse;
+    context.strokeStyle=PHASE4L.palettes.danger[1];
+    context.lineWidth=2;context.setLineDash([7,9]);
+    context.beginPath();context.arc(0,0,r,0,Math.PI*2);context.stroke();
+    context.setLineDash([]);context.restore();
+  }
   for(const effect of phase4lEffects){
     if(phase4lVisible(effect.x,effect.y,160))phase4lDrawEffect(effect);
   }
