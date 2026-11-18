@@ -107,8 +107,10 @@ function performShotgunAttack() {
   // into a shotgun, using the already-existing delayed-slam system.
   if (player.secondarySlam && typeof stage4cDelayedSlams !== 'undefined') {
     stage4cDelayedSlams.push({
-      x: player.x + direction.x * Math.min(44, player.attackRange * 0.38),
-      y: player.y + direction.y * Math.min(44, player.attackRange * 0.38),
+      // Centre the echo in the shotgun impact zone. Strong knockback may
+      // otherwise push hit foxes beyond a pulse centred near the player.
+      x: player.x + direction.x * Math.min(100, shotgunRange * 0.72),
+      y: player.y + direction.y * Math.min(100, shotgunRange * 0.72),
       radius: player.slamRadius * 1.18,
       delay: 0.42,
       damage: player.attackDamage * 0.48,
