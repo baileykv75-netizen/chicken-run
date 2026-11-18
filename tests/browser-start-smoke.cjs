@@ -197,6 +197,7 @@ const { chromium } = require('playwright');
         pierce:player.maxPierce,count:player.spearCount,projectileSpeed:player.projectileSpeed};
       activateGunWorldline();
       const rifleRange=stage4bRifleRange(),baseRange=Math.max(390,player.attackRange*1.35);
+      const inheritedVolleyCount=player.spearCount;
       // Two volley rays can straddle a distant central target; independently
       // verify the inherited range using the centre barrel, retaining the
       // learned volley count in the stats snapshot above.
@@ -204,7 +205,7 @@ const { chromium } = require('playwright');
       const target=foxAt((rifleRange+baseRange)/2);foxes=[target];
       const rifleHit=performRifleAttack();
       result.spear={...spearData,gunOut:player.damageOut,gunBack:player.damageBack,
-        gunPierce:player.maxPierce,gunCount:player.spearCount,
+        gunPierce:player.maxPierce,gunCount:inheritedVolleyCount,
         rifleRange,baseRange,rifleHit,remaining:target.health};
 
       selectedWeapon='hammer';resetGame();state='playing';phase4j.solids=[];
