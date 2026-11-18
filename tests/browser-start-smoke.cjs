@@ -324,6 +324,142 @@ const { chromium } = require('playwright');
        !chickHealth.captured.carried||!chickHealth.captured.by||
        chickHealth.rescued.health<18||chickHealth.rescued.carried)
        throw Error('Deployed chick HP and capture regression: '+JSON.stringify(chickHealth));
+    const arsenalChecks=await page.evaluate(()=>{
+      selectedWeapon='spear';resetGame();state='playing';
+      const chick=chicks[0];
+      const initial={catalog:PHASE5_GEAR.length,gold:phase5.gold,level:chick.trainingLevel,
+        hp:chick.health,max:chick.maxHealth,safe:chick.atCoop,
+        availableSkills:currentSkillDefinitions().map(s=>s.id)};
+      phase5.gold=1500;
+      const purchased=['rotary','storm-spear','hammer','heal','armor','phoenix'].map(id=>phase5BuyGear(id));
+      const items=phase5Arsenal.items.slice();
+      const equipOne=phase5EquipItem(chick,items[0].uid);
+      const level2=phase5UpgradeChick(chick);
+      const oldHealth=chick.health;
+      const upgrade1=phase5UpgradeGear(items[0].uid);
+      const level3=phase5UpgradeChick(chick);
+      const upgrade2=phase5UpgradeGear(items[0].uid);
+      const otherEquip=items.slice(1,4).map(item=>phase5EquipItem(chick,item.uid));
+      const exceedsSlots=!phase5EquipItem(chick,items[4].uid);
+      const stats={level:chick.trainingLevel,health:chick.health,
+        oldHealth,max:chick.maxHealth,slots:chick.equipment.length,
+        weaponLevel:items[0].level,compatible:items[0].level<=chick.trainingLevel,
+        equipOne,level2,level3,upgrade1,upgrade2,otherEquip,exceedsSlots};
+      // Each of the four equipped weapons has its own active cooldown.
+      chick.atCoop=false;chick.x=player.x+65;chick.y=player.y+30;
+      player.x+=270;player.y+=5;
+      const fox={x:chick.x+60,y:chick.y,radius:14,health:100000,
+        maxHealth:100000,type:'normal',dead:false,stunnedFor:0,
+        hitFlash:0,target:chick,carrying:null,xp:0};
+      foxes=[fox];phase5UpdateGearCombat(.033);
+      const combat={damage:100000-fox.health,
+        activeCooldowns:phase5ChickItems(chick).filter(item=>item.cooldown>0).length};
+      // No heal simply for returning to the coop.
+      chick.atCoop=true;chick.health=12;
+      updateChicks(5);
+      const noFreeHeal=chick.health===12;
+      const goldBeforeHeal=phase5.gold;
+      const paidHeal=phase5HealChick(chick);
+      const healed={paidHeal,hp:chick.health,max:chick.maxHealth,
+        spent:goldBeforeHeal-phase5.gold};
+      const saleBefore=phase5.gold;
+      const sold=phase5SellGear(items[4].uid);
+      const saleGain=phase5.gold-saleBefore;
+      // Lost chick takes all 4 equipped items out of inventory.
+      chick.lost=true;
+      phase5RemoveLostGear();
+      const loss={itemsLeft:phase5Arsenal.items.length,slots:chick.equipment.length};
+      // Ensure each catalog item is backed by a real on-hit, combat, or passive effect.
+      const active=PHASE5_GEAR.filter(g=>g.cooldown>0).map(g=>g.id);
+      const passive=PHASE5_GEAR.filter(g=>g.cooldown===0).map(g=>g.id);
+      return {initial,purchased,stats,combat,noFreeHeal,healed,sold,saleGain,
+        loss,active,passive};
+    });
+    console.log('ARSENAL CHECK',JSON.stringify(arsenalChecks));
+    const ar=arsenalChecks;
+    if(ar.initial.catalog!==24||ar.initial.gold!==25||ar.initial.level!==1||
+       ar.initial.availableSkills.includes('chick-awaken')||
+       ar.initial.availableSkills.includes('rogue-cultivation')||
+       !ar.purchased.every(Boolean)||
+       !ar.stats.equipOne||!ar.stats.level2||!ar.stats.level3||
+       !ar.stats.upgrade1||!ar.stats.upgrade2||
+       !ar.stats.otherEquip.every(Boolean)||!ar.stats.exceedsSlots||
+       ar.stats.level!==3||ar.stats.slots!==4||ar.stats.weaponLevel!==3||
+       ar.stats.health!==ar.stats.oldHealth||!ar.stats.compatible||
+       ar.combat.damage<=0||ar.combat.activeCooldowns<2||
+       !ar.noFreeHeal||!ar.healed.paidHeal||
+       ar.healed.hp!==ar.healed.max||ar.healed.spent<=0||
+       !ar.sold||ar.saleGain<=0||ar.loss.itemsLeft!==1||ar.loss.slots!==0||
+       ar.active.length+ar.passive.length!==24)
+      throw Error('Phase 5 arsenal regression: '+JSON.stringify(ar));
+    const shopUi=await page.evaluate(()=>{
+      resetGame();state='playing';
+      phase5ShopButton.click();
+      const open=phase5Arsenal.shopOpen&&state==='paused'&&phase5ShopPanel.style.display==='block';
+      phase5ShopPanel.querySelector('[data-action="close"]').click();
+      const closed=!phase5Arsenal.shopOpen&&state==='playing';
+      return {open,closed};
+    });
+    console.log('SHOP UI CHECK',JSON.stringify(shopUi));
+    if(!shopUi.open||!shopUi.closed)throw Error('Coop shop UI regression: '+JSON.stringify(shopUi));
+    const itemEffects=await page.evaluate(()=>{
+      selectedWeapon='sword';resetGame();state='playing';phase4j.solids=[];
+      phase5.gold=1000;
+      const chick=chicks[0];chick.atCoop=false;
+      chick.x=player.x+100;chick.y=player.y+50;
+      player.x=chick.x+15;player.y=chick.y+15;
+      const fox={x:chick.x+45,y:chick.y,radius:14,health:1000000,maxHealth:1000000,
+        type:'normal',xp:0,dead:false,stunnedFor:0,hitFlash:0,carrying:null,target:chick};
+      foxes=[fox];
+      const activated=[],exceptions=[];
+      for(const type of PHASE5_GEAR.filter(t=>t.cooldown>0)){
+        // Isolate each ability: previous knockback must not move the fox outside
+        // the next weapon's effective reach.
+        fox.x=chick.x+35;fox.y=chick.y;fox.stunnedFor=0;
+        chick.health=25;player.health=25;
+        const item={uid:-1,id:type.id,level:3,ownerId:chick.id,cooldown:0};
+        const previousEquipment=chick.equipment;
+        chick.equipment=[];phase5Arsenal.items.push(item);
+        chick.equipment=[item.uid];
+        try{
+          const yes=phase5GearActive(chick,item);
+          activated.push({id:type.id,yes});
+        }catch(error){exceptions.push({id:type.id,error:String(error)})}
+        phase5Arsenal.items.pop();chick.equipment=previousEquipment;
+      }
+      const armor=phase5AddItem('armor',3);
+      chick.equipment=[armor.uid];armor.ownerId=chick.id;
+      phase5RefreshChickHp(chick);
+      const armoredMax=chick.maxHealth,damageReduction=phase5GearDamageReduction(chick);
+      const phoenix=phase5AddItem('phoenix',3);
+      chick.equipment=[phoenix.uid];phoenix.ownerId=chick.id;
+      phase5RefreshChickHp(chick);
+      chick.health=5;chick.invulnerableFor=0;
+      phase5TryAttackChick(fox,chick);
+      const phoenixSave=chick.health>0&&chick.phase5PhoenixUsed&&!chick.downedFor;
+      return {activated,exceptions,armoredMax,damageReduction,phoenixSave};
+    });
+    console.log('GEAR EFFECT CHECK',JSON.stringify(itemEffects));
+    if(itemEffects.exceptions.length||itemEffects.activated.length!==16||
+      itemEffects.activated.some(x=>!x.yes)||itemEffects.armoredMax<=100||
+      itemEffects.damageReduction<=0||!itemEffects.phoenixSave)
+      throw Error('Gear effect runtime failure: '+JSON.stringify(itemEffects));
+    const mobile=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+    mobile.on('pageerror',e=>{errors.push('mobile '+String(e));});
+    await mobile.goto('http://127.0.0.1:8765/',{waitUntil:'load'});
+    await mobile.click('#startButton');
+    const mobileInfo=await mobile.evaluate(()=>({
+      game:state,eggs:phase5.eggs.length,
+      world:[world.width,world.height],
+      mapSize:[phase5Map.style.width,phase5Map.style.height],
+      shopButton:!!document.querySelector('#phase5ShopButton'),
+    }));
+    console.log('MOBILE PHASE5 CHECK',JSON.stringify(mobileInfo));
+    await mobile.close();
+    if(mobileInfo.game!=='playing'||mobileInfo.eggs!==3||
+       mobileInfo.world[0]<3000||mobileInfo.world[1]<4500||
+       mobileInfo.mapSize[0]!=='150px'||!mobileInfo.shopButton)
+      throw Error('Mobile Phase5 layout/start regression: '+JSON.stringify(mobileInfo));
     if(errors.length)throw Error('Runtime errors in capture checks: '+errors.join(' | ').slice(0,2200));
     console.log('PASS: time advances; normal/elite escapes lose the chick, defeating captor rescues it.');
   } finally {await browser.close()}

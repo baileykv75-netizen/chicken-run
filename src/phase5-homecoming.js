@@ -19,6 +19,17 @@ const phase5Status = document.createElement('div');
 phase5Status.id = 'phase5Status';
 phase5Status.style.cssText = 'position:fixed;right:14px;top:243px;z-index:8;padding:7px 9px;border-radius:9px;background:#f7edd9e8;color:#483c2d;font:700 13px sans-serif;pointer-events:none';
 document.querySelector('#app').appendChild(phase5Status);
+// Keep navigation visible on mobile without covering the entire play area.
+function phase5SizeNavigation(){
+  const small=window.innerWidth<700;
+  phase5Map.style.width=small?'150px':'222px';
+  phase5Map.style.height=small?'110px':'162px';
+  phase5Map.style.top=small?'98px':'72px';
+  phase5Status.style.top=small?'216px':'243px';
+  phase5Status.style.fontSize=small?'11px':'13px';
+}
+window.addEventListener('resize',phase5SizeNavigation);
+phase5SizeNavigation();
 
 // Every deployed chick has its own HP. No awakened/cultivated immunity.
 // Repeated fox contact is throttled, but there is no automatic regeneration.
@@ -28,9 +39,14 @@ function phase5TryAttackChick(fox, chick) {
   chick.health ??= chick.maxHealth;
   if ((chick.downedFor || 0)>0 || (chick.invulnerableFor || 0)>0) return;
   if (chick.health>0) {
-    chick.health=Math.max(0,chick.health-(fox.type==='brute'?34:fox.phase4gKind?30:22));
+    const baseDamage=fox.type==='brute'?34:fox.phase4gKind?30:22;
+    const armor=typeof phase5GearDamageReduction==='function'?phase5GearDamageReduction(chick):0;
+    chick.health=Math.max(0,chick.health-Math.max(2,Math.round(baseDamage*(1-armor))));
     chick.invulnerableFor=.8;
     addParticles(chick.x,chick.y,'!',2);
+    if(chick.health===0 && typeof phase5GearPreventFatal==='function'
+       && phase5GearPreventFatal(chick))return;
+    if(typeof phase5GearOnHit==='function')phase5GearOnHit(chick,fox);
     if(chick.health===0) {
       chick.downedFor=2.2;
       phase4iMessage('小鸡倒地！赶快击退狐狸救援');
@@ -246,6 +262,8 @@ phase5CoopButton.addEventListener('click',()=>{
     const stored=chicks.find(c=>c.atCoop&&!c.lost);
     if(stored) {
       stored.atCoop=false;stored.phase5Departing=true;
+      stored.phase5PhoenixUsed=false;stored.phase5ShieldReady=0;
+      stored.phase5ArmorGuardUsed=false;
       stored.x=player.x+30;stored.y=player.y+30;
       phase4iMessage('小鸡出征！野外有被抓走的风险');
     }
