@@ -29,7 +29,7 @@ function stage4eInsertNearestRifleHit(hits, fox, distance, limit) {
 }
 
 performRifleAttack = function performStage4eVolleyRifleAttack() {
-  const rifleRange = Math.max(390, player.attackRange * 1.35);
+  const rifleRange = stage4bRifleRange();
   const target = nearestLivingFox(rifleRange);
   if (!target) return false;
 
