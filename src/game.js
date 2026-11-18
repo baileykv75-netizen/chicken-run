@@ -1527,7 +1527,7 @@ function draw() {
 }
 
 function gameLoop(currentTime) {
-  const deltaTime = Math.min(0.033, (currentTime - previousTime) / 1000 || 0);
+  const deltaTime = Math.max(0, Math.min(0.033, (currentTime - previousTime) / 1000 || 0));
   previousTime = currentTime;
   if (state === 'playing') update(deltaTime);
   draw();

@@ -32,8 +32,9 @@ phase4fReset();
 // Each 120-second cycle allocates exactly 30s easy, 60s threat and 30s hard.
 // Rotate the segment order per cycle so the player cannot memorize the spikes.
 function phase4fScheduledPhase(seconds) {
-  const cycle = Math.floor(seconds / PHASE4F.cycle);
-  const within = seconds % PHASE4F.cycle;
+  const safeSeconds = Number.isFinite(seconds) ? Math.max(0, seconds) : 0;
+  const cycle = Math.floor(safeSeconds / PHASE4F.cycle);
+  const within = safeSeconds % PHASE4F.cycle;
   const orders = [
     [['easy', 30], ['threat', 60], ['hard', 30]],
     [['threat', 30], ['hard', 30], ['threat', 30], ['easy', 30]],
