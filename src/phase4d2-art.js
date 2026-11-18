@@ -69,7 +69,7 @@ drawChick = function drawStage4d2Chick(chick) {
 const stage4d2DrawFoxFallback = drawFox;
 drawFox = function drawStage4d2Fox(fox) {
   if (fox.dead || fox.health <= 0) return;
-  const target = fox.carrying ? nearestWorldEdgeVector(fox.x, fox.y) : fox.target || player;
+  const target = fox.carrying ? (fox.phase4jEscapeFacing || nearestWorldEdgeVector(fox.x, fox.y)) : fox.target || player;
   const angle = fox.carrying
     ? Math.atan2(target.y, target.x)
     : Math.atan2(target.y - fox.y, target.x - fox.x);
