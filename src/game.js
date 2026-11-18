@@ -214,16 +214,16 @@ function isPortraitTouchLayout() {
 
 function updateWorldSize() {
   if (isPortraitTouchLayout()) {
-    world.width = Math.max(1800, width * 2.4);
-    world.height = Math.max(3000, height * 1.8);
+    world.width = Math.max(3000, width * 3.3);
+    world.height = Math.max(4500, height * 2.6);
     camera.zoom = 0.7;
   } else if (isTouchDevice()) {
-    world.width = Math.max(2300, width * 2);
-    world.height = Math.max(1600, height * 1.9);
+    world.width = Math.max(3800, width * 2.7);
+    world.height = Math.max(2800, height * 2.4);
     camera.zoom = 0.82;
   } else {
-    world.width = Math.max(2500, width * 1.7);
-    world.height = Math.max(1700, height * 1.75);
+    world.width = Math.max(4200, width * 2.5);
+    world.height = Math.max(3000, height * 2.4);
     camera.zoom = 1;
   }
 }
