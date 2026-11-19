@@ -44,3 +44,46 @@
 .p5-product-title strong{white-space:nowrap;color:#9a682e}
 .p5-product p{font-size:13px;color:#736957;margin:9px 0 13px;min-height:39px}
 @media(max-width:640px){.p5-shop-panel{inset:2% 8px;padding:12px;border-radius:13px}.p5-top h2{font-size:19px}.p5-summary{gap:6px;padding:9px}.p5-summary strong{font-size:18px}.p5-tabs .p5-action{padding:8px 3px;font-size:12px}.p5-slots,.p5-catalog{grid-template-columns:1fr}.p5-slot{min-height:58px}.p5-slot-buttons .p5-action{font-size:11px}.p5-section-head small{max-width:54%;text-align:right}}
+
+/* Clear formation: left = safe coop, right = deployed team. */
+.p5-roster{margin:4px 0 15px;padding:12px;background:#efe5cf;border-radius:12px;border:1px solid #d5c3a0}
+.p5-roster-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.p5-roster-col{min-width:0;border-radius:10px;background:#fffaf0;padding:10px;border:1px solid #d3c4a6}
+.p5-roster-col>b{display:block;margin-bottom:8px}
+.p5-roster-col.p5-drop-zone{border:2px dashed #967c53;background:#f3ead5}
+.p5-chick-card{display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid #e4d8c1;padding:8px 0}
+.p5-chick-card:last-child{border-bottom:none}
+.p5-chick-card[draggable]{cursor:grab}
+.p5-chick-card small{display:block;color:#88765d;font-size:11px}
+.p5-roster-empty{min-height:50px;display:flex;align-items:center;justify-content:center;color:#8a7b60;font-size:12px}
+.p5-chick-selector{margin-bottom:8px}
+.p5-gear-image{position:relative;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:49px;height:49px;border:2px solid;border-radius:10px;box-shadow:0 1px 2px #0001}
+.p5-quality-1{background:linear-gradient(145deg,#fff,#f1f1f1);border-color:#c9c9c9;color:#555}
+.p5-quality-2{background:linear-gradient(145deg,#c6f1bb,#67bf78);border-color:#3b9651;color:#285737}
+.p5-quality-3{background:linear-gradient(145deg,#e7c3ff,#9f66cd);border-color:#8547b2;color:#553070}
+.p5-gear-symbol{font-size:27px;line-height:1;filter:drop-shadow(0 1px 1px #fff8)}
+.p5-gear-level{position:absolute;right:1px;bottom:1px;background:#211c2599;color:#fff;padding:0 3px;border-radius:3px;font-size:9px;font-weight:700}
+.p5-gear-preview{border:none;background:transparent;color:inherit;cursor:pointer;display:flex;align-items:center;gap:10px;text-align:left;min-width:0;padding:0}
+.p5-gear-preview:hover .p5-gear-name{text-decoration:underline}
+.p5-gear-name{font-weight:650;line-height:1.25}
+.p5-slot-name{font-size:13px;flex:1}
+.p5-slot{align-items:center}
+.p5-slot .p5-gear-image{width:42px;height:42px}
+.p5-slot .p5-gear-symbol{font-size:23px}
+.p5-inventory{grid-template-columns:repeat(2,minmax(0,1fr))}
+.p5-detail{position:sticky;bottom:0;z-index:2;border:2px solid #a68c60;background:#fffdf7;border-radius:12px;padding:14px;margin-top:18px;box-shadow:0 -3px 20px #4f422028}
+.p5-detail-header{display:flex;align-items:center;gap:12px}
+.p5-detail-header>div{flex:1}
+.p5-detail-header b{font-size:17px}
+.p5-detail-header p{color:#867257;margin:2px 0;font-size:12px}
+.p5-detail>p{color:#5d5141;font-size:13px}
+.p5-detail-stats{display:flex;flex-wrap:wrap;gap:6px}
+.p5-detail-stats span{background:#f3e7d0;color:#65523a;border-radius:6px;padding:6px 8px;font-size:12px}
+.p5-detail-actions{display:flex;gap:8px;margin-top:12px}
+@media(max-width:640px){
+.p5-roster{padding:9px}.p5-roster-grid{grid-template-columns:1fr;gap:8px}
+.p5-chick-card{gap:4px}.p5-chick-card .p5-action{font-size:12px;padding:5px 9px}
+.p5-inventory{grid-template-columns:1fr}
+.p5-gear-image{width:43px;height:43px}.p5-gear-symbol{font-size:24px}
+.p5-detail{padding:10px}.p5-detail-stats span{font-size:11px}
+}

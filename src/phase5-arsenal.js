@@ -1,8 +1,8 @@
 // Phase 5C: coins, chicken upgrades, four weapon slots, inventory and shop.
-const phase5Arsenal={items:[],serial:1,selectedId:null,category:'火力',tab:'equip',shopOpen:false,chest:null,chestSeed:0};
+const phase5Arsenal={items:[],serial:1,selectedId:null,category:'火力',tab:'equip',detailId:null,shopOpen:false,chest:null,chestSeed:0};
 const phase5ShopButton=document.createElement('button');
 phase5ShopButton.id='phase5ShopButton';phase5ShopButton.type='button';
-phase5ShopButton.textContent='鸡棚商店 / 小鸡培养';
+phase5ShopButton.textContent='鸡棚 · 出战与装备';
 phase5ShopButton.style.cssText='position:fixed;bottom:40px;left:50%;transform:translateX(-50%);z-index:12;background:#e0bb77;border:2px solid #92724e;color:#352c20;border-radius:12px;padding:10px 15px;font-weight:bold;display:none';
 document.querySelector('#app').append(phase5ShopButton);
 const phase5ShopPanel=document.createElement('div');
@@ -39,8 +39,12 @@ function phase5ChickHpLimit(chick){
 }
 function phase5RefreshChickHp(chick){
   phase5EnsureChick(chick);
+  const previousMax=chick.maxHealth||100;
+  const fraction=Math.max(0,Math.min(1,chick.health/previousMax));
   chick.maxHealth=phase5ChickHpLimit(chick);
-  chick.health=Math.min(chick.health,chick.maxHealth);
+  // Preserve injury percentage, not the stale absolute 100 HP after promotion.
+  // Also prevents equip/unequip armor from becoming a free healing exploit.
+  chick.health=Math.min(chick.maxHealth,Math.round(chick.maxHealth*fraction));
 }
 function phase5AddItem(id,level=1){
   if(!PHASE5_GEAR_BY_ID[id])return null;
@@ -124,9 +128,154 @@ function phase5HealChick(chick){
 function phase5ShopCard(text,action,disabled=false,style=''){
   return '<button type="button" class="p5-action '+style+'" data-action="'+action+'" '+(disabled?'disabled':'')+'>'+text+'</button>';
 }
+function phase5GearImage(item){
+  const gear=PHASE5_GEAR_BY_ID[item.id];
+  return '<span class="p5-gear-image p5-quality-'+item.level+'" aria-label="'+gear.name+' '+item.level+'级"><span class="p5-gear-symbol">'+gear.icon+'</span><span class="p5-gear-level">Lv.'+item.level+'</span></span>';
+}
 function phase5ShopItemInfo(item){
   const gear=PHASE5_GEAR_BY_ID[item.id];
-  return gear.icon+' '+gear.name+' <small>Lv.'+item.level+'</small>';
+  return phase5GearImage(item)+'<span class="p5-gear-name">'+gear.name+'</span>';
+}
+const PHASE5_GEAR_LEVEL_EFFECTS = {
+  "rotary": [
+    "单发自动射击",
+    "双弹道连续射击",
+    "四发轮射弹幕"
+  ],
+  "storm-spear": [
+    "贯穿最多4名直线目标",
+    "贯穿最多6名直线目标",
+    "贯穿最多8名目标并连锁电击"
+  ],
+  "sniper": [
+    "优先狙击精英狐狸",
+    "增加暴击概率",
+    "更高暴击与远距离穿甲重击"
+  ],
+  "grenade": [
+    "投掷小范围炸弹",
+    "爆炸范围增大",
+    "留下持续灼烧区"
+  ],
+  "hammer": [
+    "近距离范围击退",
+    "范围和击退增强",
+    "群体重击附加短暂眩晕"
+  ],
+  "armor": [
+    "额外生命上限与伤害减免",
+    "增强生命与伤害减免",
+    "低生命触发一次紧急防护"
+  ],
+  "orbit": [
+    "周期性近身旋刃",
+    "两轮旋刃同时攻击",
+    "增加旋刃范围和伤害"
+  ],
+  "thorns": [
+    "被攻击时反击",
+    "反击附带短暂减速",
+    "受击触发范围反击波"
+  ],
+  "frost": [
+    "对目标周围敌人施加减速",
+    "更大范围寒冷与少量伤害",
+    "扩大范围并短暂冻结"
+  ],
+  "pulse": [
+    "电击附近两只狐狸",
+    "电击三只并打断冲锋",
+    "连锁四只，控制更强"
+  ],
+  "gravity": [
+    "牵引狐狸至集结点",
+    "增加牵引范围",
+    "聚怪时产生额外伤害"
+  ],
+  "trap": [
+    "周期性放置减速陷阱",
+    "陷阱可造成伤害",
+    "更大的陷阱和更强缠绕"
+  ],
+  "leech": [
+    "攻击命中时吸取少量生命",
+    "提高伤害回血比例",
+    "进一步提高吸血比例"
+  ],
+  "heal": [
+    "冷却后恢复自身生命",
+    "也治疗附近受伤队友",
+    "更大范围的群体恢复"
+  ],
+  "shield": [
+    "低血量触发短暂防护",
+    "提高防护持续并缩短冷却",
+    "触发时击退近身狐狸"
+  ],
+  "drone": [
+    "自动治疗附近低血量队友或玩家",
+    "提高治疗量与范围",
+    "再提升治疗量与范围"
+  ],
+  "banner": [
+    "为附近小鸡提高攻击伤害",
+    "扩大范围与伤害增益",
+    "更大的范围和增益"
+  ],
+  "lure": [
+    "制造诱饵吸引普通狐狸",
+    "延长诱饵持续时间",
+    "诱饵消失时发生爆炸"
+  ],
+  "radar": [
+    "标记附近危险精英狐狸",
+    "延长高危目标探测距离",
+    "进一步扩大探测范围"
+  ],
+  "salvager": [
+    "击败狐狸额外获得1金币",
+    "击败狐狸额外获得2金币",
+    "击败狐狸额外获得3金币"
+  ],
+  "echo": [
+    "复制火力武器的额外攻击",
+    "复制攻击伤害提高",
+    "进一步提高复制攻击伤害"
+  ],
+  "timeslow": [
+    "短暂延缓附近敌人",
+    "延缓持续更久、范围更大",
+    "进一步延长控制和扩大范围"
+  ],
+  "phoenix": [
+    "每次出征一次致命防护",
+    "防护后保留更多生命",
+    "进一步增强致命防护恢复"
+  ],
+  "overdrive": [
+    "周期加速附近队友装备冷却",
+    "更长加速持续时间",
+    "更大的加速范围和持续时间"
+  ]
+};
+function phase5ChickMoveSpeed(chick){
+  const count=phase5ChickItems(chick).length;
+  return count?Math.min(player.speed,170+12*count):ENDLESS_CONFIG.chickSpeed;
+}
+function phase5GearDetails(item){
+  if(!item)return '';
+  const gear=PHASE5_GEAR_BY_ID[item.id],owner=chicks.find(c=>(c.equipment||[]).includes(item.uid));
+  const cost=item.level===1?25:55;
+  const effects=PHASE5_GEAR_LEVEL_EFFECTS[item.id]||[];
+  return '<section class="p5-detail"><div class="p5-detail-header">'+phase5GearImage(item)+
+    '<div><b>'+gear.name+' · Lv.'+item.level+'</b><p>'+gear.category+'装备 · '+(owner?'已装备于小鸡 #'+owner.id:'未装备')+'</p></div>'+
+    phase5ShopCard('收起','detail:none')+'</div>'+
+    '<p><b>当前 Lv.'+item.level+'：</b>'+(effects[item.level-1]||gear.description)+'</p>'+
+    (item.level<3?'<p><b>下一级：</b>'+effects[item.level]+'</p>':'')+
+    '<div class="p5-detail-stats"><span>移动速度 +12 / 件</span><span>最多同时装备4件</span><span>装备满级 Lv.3</span>'+
+    (gear.cooldown>0?'<span>基础技能冷却 '+gear.cooldown+'秒</span>':'<span>被动效果 · 无主动冷却</span>')+'</div>'+
+    '<div class="p5-detail-actions">'+phase5ShopCard(item.level<3?'强化 · 🪙'+cost:'已满级','upgrade:'+item.uid,item.level>=3||phase5.gold<cost||owner&&owner.trainingLevel<=item.level,'p5-primary')+
+    phase5ShopCard('出售 · 🪙'+Math.floor(phase5GearValue(item)*.65),'sell:'+item.uid,owner&&!owner.atCoop)+'</div></section>';
 }
 function phase5ShopRender(){
   if(!phase5Arsenal.shopOpen)return;
@@ -134,7 +283,8 @@ function phase5ShopRender(){
   if(selected)phase5Arsenal.selectedId=selected.id;
   const survivors=chicks.filter(c=>c.atCoop&&!c.lost);
   const held=selected?phase5ChickItems(selected):[];
-  const available=phase5Arsenal.items.filter(item=>item.ownerId===null);
+  const available=phase5Arsenal.items.filter(item=>item.ownerId===null)
+    .sort((a,b)=>b.level-a.level||a.id.localeCompare(b.id)||a.uid-b.uid);
   const tab=phase5Arsenal.tab;
   let html='<div class="p5-top"><div><h2>鸡棚整备</h2><p>给小鸡配武器，整备好了再出发</p></div>'+phase5ShopCard('✕ 关闭','close',false,'p5-close')+'</div>';
   html+='<div class="p5-summary"><strong>🪙 '+phase5.gold+' <span>金币</span></strong><span>🏠 归巢 '+phase5SafeCount()+'/10</span><span>🎒 装备 '+phase5Arsenal.items.length+'件</span></div>';
@@ -143,8 +293,27 @@ function phase5ShopRender(){
     html+=phase5ShopCard(label,'tab:'+key,false,tab===key?'p5-active':'');
   html+='</nav>';
   if(tab==='equip'){
+    const deployed=chicks.filter(c=>!c.atCoop&&!c.lost&&!c.carriedBy);
+    html+='<section class="p5-roster"><div class="p5-section-head"><b>出战队伍 · '+deployed.length+'只</b><small>点击出战，或拖动小鸡到右侧</small></div>';
+    html+='<div class="p5-roster-grid"><div class="p5-roster-col"><b>🏠 鸡棚留守</b><div class="p5-chicks p5-drag-source">';
+    for(const chick of survivors){
+      phase5EnsureChick(chick);
+      const armCount=(chick.equipment||[]).length;
+      html+='<div class="p5-chick-card" draggable="true" data-drag-chick="'+chick.id+'">'+
+        '<span>🐥 #'+chick.id+' · Lv.'+chick.trainingLevel+'<small>装备 '+armCount+'/4 · '+Math.round(chick.health)+' HP</small></span>'+
+        phase5ShopCard('出战 →','deploy:'+chick.id,false,'p5-primary')+'</div>';
+    }
+    if(!survivors.length)html+='<small>鸡棚里没有小鸡</small>';
+    html+='</div></div><div class="p5-roster-col p5-drop-zone" data-drop-roster="deployed"><b>⚔️ 野外出战</b><div class="p5-chicks">';
+    for(const chick of deployed){
+      html+='<div class="p5-chick-card"><span>🐥 #'+chick.id+' · Lv.'+(chick.trainingLevel||1)+
+      '<small>装备 '+(chick.equipment||[]).length+'/4 · '+Math.round(chick.health||0)+' HP</small></span>'+
+      phase5ShopCard('← 留守','recall:'+chick.id)+'</div>';
+    }
+    if(!deployed.length)html+='<div class="p5-roster-empty">把小鸡放到这里出战</div>';
+    html+='</div></div></div></section>';
     html+='<div class="p5-section-head"><b>选择小鸡</b><small>只有留守鸡棚的小鸡可以整备</small></div>';
-    html+='<div class="p5-chicks">';
+    html+='<div class="p5-chicks p5-chick-selector">';
     for(const chick of survivors){
       phase5EnsureChick(chick);
       html+=phase5ShopCard('🐥 #'+chick.id+' <small>Lv.'+chick.trainingLevel+'</small>','select:'+chick.id,false,selected===chick?'p5-active':'');
@@ -157,6 +326,7 @@ function phase5ShopRender(){
       const hp=Math.max(0,Math.ceil(selected.health)), max=selected.maxHealth;
       const healCost=Math.max(2,Math.ceil((max-hp)/5));
       html+='<div class="p5-chick-status"><div class="p5-status-title"><b>🐥 小鸡 #'+selected.id+' · Lv.'+selected.trainingLevel+'</b><span>武器 '+held.length+'/4</span></div>';
+      html+='<div class="p5-chick-movespeed">移动速度 '+Math.round(phase5ChickMoveSpeed(selected))+' / 玩家 '+Math.round(player.speed)+' · '+(held.length?'装备 '+held.length+'件':'尚未装备')+'</div>';
       html+='<div class="p5-hp-row"><span>生命 '+hp+'/'+max+'</span><div class="p5-hp-track"><i style="width:'+Math.max(0,Math.min(100,Math.round(hp/max*100)))+'%"></i></div></div>';
       html+='<div class="p5-actions">';
       html+=phase5ShopCard(cost?'升级小鸡 · 🪙'+cost:'已满级','level',!cost||phase5.gold<cost,'p5-primary');
@@ -168,7 +338,7 @@ function phase5ShopRender(){
         const item=held[i];
         html+='<div class="p5-slot"><span class="p5-slot-index">'+(i+1)+'</span>';
         if(item){
-          html+='<div class="p5-slot-name">'+phase5ShopItemInfo(item)+'</div>';
+          html+='<button type="button" class="p5-gear-preview p5-slot-name" data-action="detail:'+item.uid+'">'+phase5ShopItemInfo(item)+'</button>';
           const price=item.level===1?25:55;
           html+='<div class="p5-slot-buttons">'+phase5ShopCard('强化'+(item.level<3?' 🪙'+price:''),'upgrade:'+item.uid,item.level>=3||phase5.gold<price||selected.trainingLevel<=item.level)+phase5ShopCard('卸下','equip:'+item.uid)+'</div>';
         }else html+='<span class="p5-placeholder">空装备槽</span>';
@@ -178,7 +348,7 @@ function phase5ShopRender(){
       html+='<div class="p5-inventory">';
       if(!available.length)html+='<div class="p5-empty">背包为空。可以去「购买武器」选购，或去野外开箱。</div>';
       for(const item of available) {
-        html+='<div class="p5-inventory-row"><span>'+phase5ShopItemInfo(item)+'</span>';
+        html+='<div class="p5-inventory-row"><button type="button" class="p5-gear-preview" data-action="detail:'+item.uid+'">'+phase5ShopItemInfo(item)+'</button>';
         const locked=item.level>selected.trainingLevel;
         html+=phase5ShopCard(locked?'需要小鸡Lv.'+item.level:'装上','equip:'+item.uid,locked||held.length>=4,'p5-primary');
         html+='</div>';
@@ -211,6 +381,8 @@ function phase5ShopRender(){
     }
     html+='</div>';
   }
+  const detail=phase5FindItem(phase5Arsenal.detailId);
+  if(detail)html+=phase5GearDetails(detail);
   phase5ShopPanel.innerHTML=html;
 }
 function phase5ShopClose(){
@@ -230,6 +402,30 @@ phase5ShopButton.addEventListener('click',()=>{
   phase5Arsenal.shopOpen=true;state='paused';
   phase5ShopPanel.style.display='block';phase5ShopRender();
 });
+// Mouse drag on desktop; click buttons remain the fallback on touch screens.
+let phase5DragChickId=null;
+phase5ShopPanel.addEventListener('dragstart',ev=>{
+  const card=ev.target.closest('[data-drag-chick]');
+  if(!card)return;
+  phase5DragChickId=Number(card.dataset.dragChick);
+  ev.dataTransfer?.setData('text/plain',String(phase5DragChickId));
+  if(ev.dataTransfer)ev.dataTransfer.effectAllowed='move';
+});
+phase5ShopPanel.addEventListener('dragover',ev=>{
+  if(!ev.target.closest('[data-drop-roster="deployed"]'))return;
+  ev.preventDefault();
+  if(ev.dataTransfer)ev.dataTransfer.dropEffect='move';
+});
+phase5ShopPanel.addEventListener('drop',ev=>{
+  if(!ev.target.closest('[data-drop-roster="deployed"]'))return;
+  ev.preventDefault();
+  const id=Number(ev.dataTransfer?.getData('text/plain')||phase5DragChickId);
+  phase5DragChickId=null;
+  if(Number.isFinite(id)&&phase5DispatchChick(phase5ChickById(id))){
+    phase5ShopRender();
+  }
+});
+phase5ShopPanel.addEventListener('dragend',()=>{phase5DragChickId=null;});
 phase5ShopPanel.addEventListener('click',ev=>{
   const action=ev.target.closest('[data-action]')?.dataset.action;
   if(!action)return;
@@ -240,6 +436,9 @@ phase5ShopPanel.addEventListener('click',ev=>{
   else if(action.startsWith('category:'))phase5Arsenal.category=action.slice(9);
   else if(action.startsWith('buy:'))phase5BuyGear(action.slice(4));
   else if(action.startsWith('equip:'))phase5EquipItem(selected,Number(action.slice(6)));
+  else if(action.startsWith('detail:'))phase5Arsenal.detailId=action.slice(7)==='none'?null:Number(action.slice(7));
+  else if(action.startsWith('deploy:'))phase5DispatchChick(phase5ChickById(Number(action.slice(7))));
+  else if(action.startsWith('recall:'))phase5RecallChick(phase5ChickById(Number(action.slice(7))));
   else if(action.startsWith('sell:'))phase5SellGear(Number(action.slice(5)));
   else if(action.startsWith('upgrade:'))phase5UpgradeGear(Number(action.slice(8)));
   else if(action==='level')phase5UpgradeChick(selected);
@@ -248,7 +447,7 @@ phase5ShopPanel.addEventListener('click',ev=>{
 });
 const phase5ArsenalResetBase=resetGame;
 resetGame=function resetPhase5Arsenal(){
-  phase5Arsenal.items=[];phase5Arsenal.serial=1;phase5Arsenal.selectedId=null;
+  phase5Arsenal.items=[];phase5Arsenal.serial=1;phase5Arsenal.selectedId=null;phase5Arsenal.detailId=null;
   phase5Arsenal.chest=null;phase5Arsenal.chestSeed=0;
   phase5Arsenal.shopOpen=false;phase5Arsenal.tab='equip';phase5ShopPanel.style.display='none';
   phase5ArsenalResetBase();

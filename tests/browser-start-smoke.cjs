@@ -385,7 +385,7 @@ const { chromium } = require('playwright');
        !ar.stats.upgrade1||!ar.stats.upgrade2||
        !ar.stats.otherEquip.every(Boolean)||!ar.stats.exceedsSlots||
        ar.stats.level!==3||ar.stats.slots!==4||ar.stats.weaponLevel!==3||
-       ar.stats.health!==ar.stats.oldHealth||!ar.stats.compatible||
+       ar.stats.health!==ar.stats.max||ar.stats.oldHealth!==160||!ar.stats.compatible||
        ar.combat.damage<=0||ar.combat.activeCooldowns<2||
        !ar.noFreeHeal||!ar.healed.paidHeal||
        ar.healed.hp!==ar.healed.max||ar.healed.spent<=0||
@@ -495,6 +495,67 @@ const { chromium } = require('playwright');
        !simplifiedShop.equipped||!simplifiedShop.selling||
        !simplifiedShop.sold||!simplifiedShop.closed)
       throw Error('Simplified shop regression: '+JSON.stringify(simplifiedShop));
+    const interfaceAndSpeed=await page.evaluate(()=>{
+      resetGame();state='playing';phase5.gold=999;
+      const stored=chicks[0];
+      stored.health=100;
+      const upgraded=phase5UpgradeChick(stored);
+      const fullHealth={upgraded,health:stored.health,max:stored.maxHealth};
+      stored.health=128;
+      const injuredLevelUp=phase5UpgradeChick(stored);
+      const injury={upgraded:injuredLevelUp,health:stored.health,max:stored.maxHealth};
+      const gear=[phase5AddItem('rotary',1),phase5AddItem('heal',2),phase5AddItem('armor',3)];
+      phase5ShopButton.click();
+      const roster=!!phase5ShopPanel.querySelector('[data-drop-roster="deployed"]')&&
+        !!phase5ShopPanel.querySelector('[data-drag-chick]');
+      const storedCount=phase5ShopPanel.querySelectorAll('.p5-roster-col')[0]
+        .querySelectorAll('.p5-chick-card').length;
+      const itemButtons=[...phase5ShopPanel.querySelectorAll('.p5-inventory-row [data-action^="detail:"]')];
+      const tiers=itemButtons.map(button=>Number(button.querySelector('.p5-gear-level')?.textContent.slice(3)));
+      itemButtons[0]?.click();
+      const details=!!phase5ShopPanel.querySelector('.p5-detail')&&
+        phase5ShopPanel.querySelector('.p5-detail')?.textContent.includes('移动速度 +12')&&
+        phase5ShopPanel.querySelector('.p5-detail')?.textContent.includes('当前 Lv.3');
+      phase5ShopPanel.querySelector('[data-action="deploy:'+stored.id+'"]').click();
+      const deployed=!stored.atCoop &&
+        !!phase5ShopPanel.querySelector('[data-action="recall:'+stored.id+'"]');
+      phase5ShopPanel.querySelector('[data-action="recall:'+stored.id+'"]').click();
+      const recalled=stored.atCoop;
+      // Full gear set raises the pursuit speed, never above player movement.
+      const gear4=phase5AddItem('grenade',1);
+      for(const item of [...gear,gear4]){
+        if(item.level>stored.trainingLevel)throw Error('tier gate');
+        phase5EquipItem(stored,item.uid);
+      }
+      phase5ShopPanel.querySelector('[data-action="close"]').click();
+      phase5DispatchChick(stored);
+      const gearCount=phase5ChickItems(stored).length;
+      const configuredMax=Math.min(player.speed,170+gearCount*12);
+      const rescue={id:999,x:stored.x,y:stored.y,phase:0,wanderAngle:0,atCoop:false,
+        lost:false,carriedBy:null,protectedFor:0,health:100,maxHealth:100,radius:10};
+      chicks.push(rescue);
+      const pursuitStart={x:stored.x,y:stored.y};
+      const rescueStart={x:rescue.x,y:rescue.y};
+      player.x+=350;
+      // Directly measure chick displacement over one second, keeping wall-free.
+      phase4j.solids=[];
+      updateChicks(1);
+      const combatDistance=Math.hypot(stored.x-pursuitStart.x,stored.y-pursuitStart.y);
+      const rescuedDistance=Math.hypot(rescue.x-rescueStart.x,rescue.y-rescueStart.y);
+      const noRally=!commonUpgrades().some(u=>u.id==='rally');
+      return {fullHealth,injury,roster,storedCount,tiers,details,deployed,recalled,
+        configuredMax,gearCount,combatDistance,rescuedDistance,playerSpeed:player.speed,noRally};
+    });
+    console.log('COOP ROSTER / GEAR QUALITY / FOLLOW SPEED / HP CHECK',JSON.stringify(interfaceAndSpeed));
+    const cs=interfaceAndSpeed;
+    if(!cs.fullHealth.upgraded||cs.fullHealth.health!==160||cs.fullHealth.max!==160||
+       !cs.injury.upgraded||cs.injury.health!==192||cs.injury.max!==240||
+       !cs.roster||cs.storedCount!==1||
+       cs.tiers.join(',')!=='3,2,1'||!cs.details||
+       !cs.deployed||!cs.recalled||cs.gearCount!==4||
+       cs.configuredMax>cs.playerSpeed||cs.combatDistance<=cs.rescuedDistance||
+       cs.combatDistance>cs.playerSpeed+1||!cs.noRally)
+      throw Error('Coop roster, gear quality, follow speed or HP regression: '+JSON.stringify(cs));
     if(errors.length)throw Error('Runtime errors in capture checks: '+errors.join(' | ').slice(0,2200));
     console.log('PASS: time advances; normal/elite escapes lose the chick, defeating captor rescues it.');
   } finally {await browser.close()}
