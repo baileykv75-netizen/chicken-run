@@ -89,9 +89,13 @@ function phase5RefillEggs() {
 function phase5TriggerAmbush() {
   phase5.runs++;
   // Bounded extra waves: difficulty tracks completed homecomings, not elapsed time.
-  phase5.waveLeft = Math.min(18, 7 + Math.floor(phase5.runs*1.7));
+  // Retrieval should feel like a committed fight, not a trivial walk home.
+  // The wave remains bounded by entity caps; enemy strength is scaled separately.
+  const progress = Math.max(0, phase5SafeCount() - 1);
+  phase5.waveLeft = Math.min(24, 10 + Math.floor(phase5.runs*1.4) + progress);
   phase5.waveTimer = 0;
-  waveRemaining = Math.min(24, waveRemaining + phase5.waveLeft);
+  phase5.ambushUntil = elapsed + 26;
+  waveRemaining = Math.min(28, waveRemaining + phase5.waveLeft);
   waveSpawnTimer = 0;
   waveNoticeTimer = 3.2;
   ui.waveNotice.textContent = '⚠ 鸡蛋到手！狐狸潮来袭 · 赶快归巢！';
@@ -121,6 +125,10 @@ function phase5Deliver() {
   }
   for (const chick of chicks) {
     if (chick.lost || chick.atCoop || chick.carriedBy || chick.phase5Departing) continue;
+    // Equipped escorts keep their expedition assignment on every return.
+    // Only unarmed rescued/follower chicks are deposited automatically.
+    // A player can deliberately recall an equipped chick from the coop panel.
+    if (Array.isArray(chick.equipment) && chick.equipment.length > 0) continue;
     chick.atCoop = true;
     // Stop enemies from continuing to chase a chick that is now safely home.
     for (const fox of foxes) if (fox.target === chick) fox.target = null;
@@ -154,7 +162,7 @@ phase4iUpdateEgg = function phase5NoLegacyEggs(){};
 const phase5ResetBase = resetGame;
 resetGame = function resetPhase5() {
   phase5.eggs=[];phase5.carried=null;phase5.runs=0;
-  phase5.waveTimer=0;phase5.waveLeft=0;phase5.gold=0;
+  phase5.waveTimer=0;phase5.waveLeft=0;phase5.ambushUntil=0;phase5.gold=0;
   phase5ResetBase();
   phase4i.egg=null;
   player.x=phase5Coop().x;player.y=phase5Coop().y+35;
@@ -209,11 +217,50 @@ nearestAvailableChick = function phase5NearestOutside(fox) {
 // Phase 5 difficulty follows homecoming progress, never unlimited elapsed time.
 // The ordinary director's periodic waves and three-minute bosses would undermine
 // the new one-goal egg ambush loop; keep regular roaming foxes for XP and gold.
+// Strength and pacing scale with homecomings, combat progression and actual
+// director measurements. Time alone never raises the challenge indefinitely.
+function phase5Difficulty(){
+  const progress=Math.max(0,phase5SafeCount()-1);
+  const equipped=chicks.filter(c=>!c.lost&&!c.atCoop&&!c.carriedBy)
+    .reduce((sum,c)=>sum+(c.equipment?.length||0),0);
+  const base=1+progress*.10+Math.min(.20,Math.max(0,(player?.level||1)-1)*.025);
+  const measured=phase4f?Math.max(.9,Math.min(1.7,phase4f.multiplier)):1;
+  const team=1+Math.min(.12,equipped*.015);
+  const fragile=(player?.health||0)<(player?.maxHealth||100)*.32;
+  return Math.max(1,Math.min(2.5,base*measured*team*(fragile?.88:1)));
+}
+function phase5SpawnThreat(forced=null,isAmbush=false){
+  if(foxes.length>=currentFoxLimit())return false;
+  const before=foxes.length;
+  const created=spawnFox(forced);
+  if(!created||foxes.length<=before)return false;
+  const fox=foxes[foxes.length-1];
+  if(!fox.phase4gKind || fox.phase4gKind!=='boss'){
+    const progress=Math.max(0,phase5SafeCount()-1);
+    const intensity=phase5Difficulty();
+    const hpFactor=1.15+.20*(intensity-1)+(isAmbush?.20:0);
+    const speedFactor=1.05+.06*(intensity-1)+(isAmbush?.045:0);
+    fox.health=Math.round(fox.health*hpFactor);
+    fox.maxHealth=fox.health;
+    fox.speed*=speedFactor;
+    fox.phase5DamageScale=Math.min(1.9,1.15+progress*.055+(isAmbush?.11:0));
+    fox.phase5Ambush=!!isAmbush;
+    // Elite foxes introduce charge/control pressure after early homecomings,
+    // without requiring an additional boss or exceeding the existing fox cap.
+    if(isAmbush&&progress>=2&&!fox.phase4gKind
+       &&Math.random()<Math.min(.20,.075+progress*.012)
+       &&typeof phase4gMakeElite==='function'){
+      const types=['charger','stalker','caller'];
+      phase4gMakeElite(fox,types[(phase5.runs+waveRemaining)%types.length]);
+    }
+  }
+  return true;
+}
 updateDirector = function updatePhase5Director(dt) {
-  dangerLevel=Math.min(6,1+Math.floor(phase5SafeCount()/2));
+  const progress=Math.max(0,phase5SafeCount()-1);
+  dangerLevel=Math.min(10,2+Math.floor(progress*.85)+Math.floor((phase5Difficulty()-1)*1.4));
   if (phase4f) {
-    phase4f.phase=phase5SafeCount()>=7?'hard':phase5SafeCount()>=4?'threat':'easy';
-    // Director diagnostics still run in the normal update chain.
+    phase4f.phase=progress>=6?'hard':progress>=3?'threat':'easy';
     phase4f.activeBuff=null;
   }
   if (waveNoticeTimer>0) {
@@ -223,15 +270,17 @@ updateDirector = function updatePhase5Director(dt) {
   if (waveRemaining>0) {
     waveSpawnTimer-=dt;
     if (waveSpawnTimer<=0 && foxes.length<currentFoxLimit()) {
-      const forced=waveRemaining%5===0?'brute':waveRemaining%3===0?'swift':null;
-      if(spawnFox(forced))waveRemaining--;
-      waveSpawnTimer=.28;
+      const forced=waveRemaining%4===0?'brute':waveRemaining%2===0?'swift':null;
+      if(phase5SpawnThreat(forced,true))waveRemaining--;
+      waveSpawnTimer=Math.max(.15,.27/Math.sqrt(phase5Difficulty()));
     }
   }
   spawnTimer-=dt;
   if (spawnTimer<=0 && foxes.length<currentFoxLimit()) {
-    spawnFox();
-    spawnTimer=Math.max(2,3.4-phase5SafeCount()*.14);
+    const forced=progress>=4&&Math.random()<.20?'swift':null;
+    phase5SpawnThreat(forced,false);
+    const fragile=player.health<player.maxHealth*.32;
+    spawnTimer=Math.max(1.15,(2.8-progress*.14)/Math.sqrt(phase5Difficulty()))*(fragile?1.25:1);
   }
 };
 const phase5UpdateBase = update;
