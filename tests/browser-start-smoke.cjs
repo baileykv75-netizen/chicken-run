@@ -556,6 +556,86 @@ const { chromium } = require('playwright');
        cs.configuredMax>cs.playerSpeed||cs.combatDistance<=cs.rescuedDistance||
        cs.combatDistance>cs.playerSpeed+1||!cs.noRally)
       throw Error('Coop roster, gear quality, follow speed or HP regression: '+JSON.stringify(cs));
+
+    const homecomingSquadAndDifficulty=await page.evaluate(()=>{
+      selectedWeapon='sword';resetGame();state='playing';
+      phase5.gold=300;
+      const coop=phase5Coop();
+      const equippedChick=chicks[0];
+      const weapon=phase5AddItem('rotary',1);
+      const gearEquipped=phase5EquipItem(equippedChick,weapon.uid);
+      const chickId=equippedChick.id;
+      const deployed=phase5DispatchChick(equippedChick);
+      // First leave the coop to clear departure status.
+      player.x=coop.x+PHASE4I.deliveryRadius+100;player.y=coop.y;
+      phase5Deliver();
+      player.x=coop.x;player.y=coop.y;
+      phase5.carried={id:'persist'};
+      phase5Deliver();
+      const safeCount=phase5SafeCount();
+      const persisted={deployed:!equippedChick.atCoop,
+        equipment:equippedChick.equipment.slice(),owner:weapon.ownerId,
+        safeCount,keptHp:equippedChick.health,carried:phase5.carried};
+      // Another unarmed rescue chick should be delivered automatically.
+      const rescue=phase4hCreateChick();
+      rescue.atCoop=false;
+      rescue.x=coop.x+20;rescue.y=coop.y+20;
+      chicks.push(rescue);
+      phase5Deliver();
+      const rescueStored=rescue.atCoop;
+      const manualRecall=phase5RecallChick(equippedChick);
+      const recalled={atCoop:equippedChick.atCoop,equipment:equippedChick.equipment.slice(),
+        owner:weapon.ownerId};
+      // Treasure chest should not paint its own dot on the map.
+      foxes=[];phase5.eggs=[];phase5.carried=null;
+      const mapPos={x:world.width*.73,y:world.height*.52};
+      phase5Arsenal.chest=null;
+      draw();
+      const ctx=phase5Map.getContext('2d');
+      const ix=Math.round(7+mapPos.x/world.width*208);
+      const iy=Math.round(7+mapPos.y/world.height*148);
+      const baseline=[...ctx.getImageData(ix,iy,1,1).data];
+      phase5Arsenal.chest={...mapPos};
+      draw();
+      const withChest=[...ctx.getImageData(ix,iy,1,1).data];
+      const lootHidden=baseline.join(',')===withChest.join(',');
+      // Compare a fresh baseline fox against a later, high-performance wave fox.
+      foxes=[];phase5Arsenal.chest=null;
+      phase4f.multiplier=1;
+      player.level=1;
+      const first=phase5SpawnThreat('normal',false);
+      const normal=foxes.at(-1);
+      const early={health:normal.health,speed:normal.speed,damage:normal.phase5DamageScale};
+      for(let i=0;i<6;i++){
+        const c=phase4hCreateChick();c.atCoop=true;chicks.push(c);
+      }
+      foxes=[];
+      player.level=16;
+      phase4f.multiplier=1.5;
+      const later=phase5SpawnThreat('normal',true);
+      const lateFox=foxes.at(-1);
+      const late={health:lateFox.health,speed:lateFox.speed,
+        damage:lateFox.phase5DamageScale,elite:!!lateFox.phase4gKind};
+      waveRemaining=0;
+      phase5.runs=2;
+      phase5TriggerAmbush();
+      const ambush={waveRemaining,notice:ui.waveNotice.textContent};
+      return {gearEquipped,deployed,chickId,persisted,rescueStored,manualRecall,
+        recalled,lootHidden,first,later,early,late,ambush};
+    });
+    console.log('PERSISTENT SQUAD / HIDDEN LOOT / DIFFICULTY CHECK',
+      JSON.stringify(homecomingSquadAndDifficulty));
+    const hd=homecomingSquadAndDifficulty;
+    if(!hd.gearEquipped||!hd.deployed||!hd.persisted.deployed||
+       hd.persisted.equipment.length!==1||hd.persisted.owner!==hd.chickId||
+       hd.persisted.safeCount!==2||hd.persisted.carried!==null||
+       !hd.rescueStored||!hd.manualRecall||!hd.recalled.atCoop||
+       hd.recalled.equipment.length!==1||hd.recalled.owner!==hd.chickId||
+       !hd.lootHidden||!hd.first||!hd.later||
+       hd.late.health<=hd.early.health||hd.late.speed<=hd.early.speed||
+       hd.late.damage<=hd.early.damage||
+       hd.ambush.waveRemaining<10||!hd.ambush.notice.includes('狐狸潮'))
+      throw Error('Persistent squad, secret treasure or director regression: '+JSON.stringify(hd));
     if(errors.length)throw Error('Runtime errors in capture checks: '+errors.join(' | ').slice(0,2200));
     console.log('PASS: time advances; normal/elite escapes lose the chick, defeating captor rescues it.');
   } finally {await browser.close()}
