@@ -41,7 +41,8 @@ function phase5TryAttackChick(fox, chick) {
   if (chick.health>0) {
     const baseDamage=fox.type==='brute'?34:fox.phase4gKind?30:22;
     const armor=typeof phase5GearDamageReduction==='function'?phase5GearDamageReduction(chick):0;
-    chick.health=Math.max(0,chick.health-Math.max(2,Math.round(baseDamage*(1-armor))));
+    const threatScale=fox.phase5DamageScale||1;
+    chick.health=Math.max(0,chick.health-Math.max(2,Math.round(baseDamage*threatScale*(1-armor))));
     chick.invulnerableFor=.8;
     addParticles(chick.x,chick.y,'!',2);
     if(chick.health===0 && typeof phase5GearPreventFatal==='function'
@@ -238,12 +239,14 @@ function phase5SpawnThreat(forced=null,isAmbush=false){
   if(!fox.phase4gKind || fox.phase4gKind!=='boss'){
     const progress=Math.max(0,phase5SafeCount()-1);
     const intensity=phase5Difficulty();
-    const hpFactor=1.15+.20*(intensity-1)+(isAmbush?.20:0);
-    const speedFactor=1.05+.06*(intensity-1)+(isAmbush?.045:0);
+    // Higher health creates room for equipped chicks to actually fire their
+    // independent weapons before the player clears every target alone.
+    const hpFactor=1.45+.42*(intensity-1)+(isAmbush?.40:0);
+    const speedFactor=1.07+.07*(intensity-1)+(isAmbush?.05:0);
     fox.health=Math.round(fox.health*hpFactor);
     fox.maxHealth=fox.health;
     fox.speed*=speedFactor;
-    fox.phase5DamageScale=Math.min(1.9,1.15+progress*.055+(isAmbush?.11:0));
+    fox.phase5DamageScale=Math.min(1.9,1.16+progress*.055+(isAmbush?.09:0));
     fox.phase5Ambush=!!isAmbush;
     // Elite foxes introduce charge/control pressure after early homecomings,
     // without requiring an additional boss or exceeding the existing fox cap.
