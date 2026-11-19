@@ -37,8 +37,9 @@ updateChicks = function updateFollowerOnlyChicks(deltaTime) {
     // Rescue followers keep their original movement. Every equipped weapon
     // grants +12 speed; no combination can outrun the player.
     const equippedCount = deployedWithGear ? phase5ChickItems(chick).length : 0;
-    const baseSpeed = equippedCount ? 155 + 12 * equippedCount : ENDLESS_CONFIG.chickSpeed;
-    const maxSpeed = equippedCount ? Math.min(player.speed * .97, baseSpeed) : baseSpeed * rallySpeedMultiplier;
+    const baseSpeed = equippedCount ? 170 + 12 * equippedCount : ENDLESS_CONFIG.chickSpeed;
+    // With three/four weapons, stay at the player's pace without outrunning it.
+    const maxSpeed = equippedCount ? Math.min(player.speed, baseSpeed) : baseSpeed * rallySpeedMultiplier;
     const speed = Math.hypot(velocityX, velocityY);
     if (speed > maxSpeed) {
       velocityX = (velocityX / speed) * maxSpeed;
