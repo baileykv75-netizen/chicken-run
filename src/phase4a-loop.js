@@ -104,7 +104,8 @@ updateFoxes = function updateBalancedFoxes(deltaTime) {
     if (circlesOverlap(fox, player) && player.invulnerableFor <= 0) {
       const baseDamage = fox.type === 'brute' ? 18 : 12;
       const dashReduction = player.damageReductionFor > 0 ? 0.4 : 1;
-      const damage = Math.max(2, baseDamage * (1 - player.armor) * dashReduction);
+      const threatDamage=baseDamage*(fox.phase5DamageScale||1);
+      const damage = Math.max(2, threatDamage * (1 - player.armor) * dashReduction);
       player.health -= damage;
       player.invulnerableFor = 0.72;
       cameraShake = fox.type === 'brute' ? 10 : 7;
