@@ -250,23 +250,37 @@ update = function updatePhase5(dt) {
     }
   }
   phase5Deliver();
-  phase5CoopButton.style.display=phase5NearCoop() && state==='playing' ? 'block':'none';
+  // All deployment and recall now happens in the coop management panel.
+  phase5CoopButton.style.display='none';
 };
+function phase5DispatchChick(chick){
+  if(!chick || chick.lost || !chick.atCoop || chick.carriedBy) return false;
+  chick.atCoop=false;
+  chick.phase5Departing=true;
+  chick.phase5PhoenixUsed=false;
+  chick.phase5ShieldReady=0;
+  chick.phase5ArmorGuardUsed=false;
+  chick.x=player.x+30;chick.y=player.y+30;
+  // Deployed chicks need to leave the safety region before they can be delivered again.
+  return true;
+}
+function phase5RecallChick(chick){
+  if(!chick || chick.lost || chick.atCoop || chick.carriedBy || !phase5NearCoop())return false;
+  chick.atCoop=true;chick.phase5Departing=false;
+  chick.x=phase5Coop().x+20;chick.y=phase5Coop().y+20;
+  for(const fox of foxes)if(fox.target===chick)fox.target=null;
+  return true;
+}
+// Kept for compatibility with existing coop flow and smoke tests;
+// the visible coop controls live in the new roster screen.
 phase5CoopButton.addEventListener('click',()=>{
-  if (state!=='playing' || !phase5NearCoop()) return;
-  const outside=chicks.filter(c=>!c.atCoop&&!c.lost&&!c.carriedBy);
-  if (outside.length) {
-    for(const c of outside) {c.atCoop=true;c.x=phase5Coop().x+22;c.y=phase5Coop().y+18;}
-    phase4iMessage('小鸡已留守鸡棚 · 安全不参战');
-  } else {
-    const stored=chicks.find(c=>c.atCoop&&!c.lost);
-    if(stored) {
-      stored.atCoop=false;stored.phase5Departing=true;
-      stored.phase5PhoenixUsed=false;stored.phase5ShieldReady=0;
-      stored.phase5ArmorGuardUsed=false;
-      stored.x=player.x+30;stored.y=player.y+30;
-      phase4iMessage('小鸡出征！野外有被抓走的风险');
-    }
+  if(state!=='playing'||!phase5NearCoop())return;
+  const deployed=chicks.filter(c=>!c.atCoop&&!c.lost&&!c.carriedBy);
+  if(deployed.length){
+    for(const chick of deployed)phase5RecallChick(chick);
+  }else{
+    const chick=chicks.find(c=>c.atCoop&&!c.lost);
+    if(chick)phase5DispatchChick(chick);
   }
   updateHud();
 });
