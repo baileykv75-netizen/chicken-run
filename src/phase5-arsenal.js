@@ -295,6 +295,7 @@ function phase5ShopRender(){
   if(tab==='equip'){
     const deployed=chicks.filter(c=>!c.atCoop&&!c.lost&&!c.carriedBy);
     html+='<section class="p5-roster"><div class="p5-section-head"><b>出战队伍 · '+deployed.length+'只</b><small>点击出战，或拖动小鸡到右侧</small></div>';
+    html+='<p class="p5-squad-hint">装备小鸡返巢后保持出战和武器配置；想让它留守时点「← 留守」。无装备的小鸡到家会自动归巢。</p>';
     html+='<div class="p5-roster-grid"><div class="p5-roster-col"><b>🏠 鸡棚留守</b><div class="p5-chicks p5-drag-source">';
     for(const chick of survivors){
       phase5EnsureChick(chick);
@@ -501,11 +502,5 @@ drawWorld=function drawPhase5ArsenalWorld(){
   context.fillStyle='#4d392d';context.font='bold 13px sans-serif';
   context.textAlign='center';context.fillText('装备',0,-23);context.restore();
 };
-const phase5ArsenalDrawScreenBase=draw;
-draw=function drawPhase5ArsenalScreen(){
-  phase5ArsenalDrawScreenBase();
-  const chest=phase5Arsenal.chest;
-  if(!chest||state!=='playing')return;
-  const ctx=phase5Map.getContext('2d');
-  ctx.fillStyle='#8f6744';ctx.fillRect(7+chest.x/world.width*208-4,7+chest.y/world.height*148-4,8,8);
-};
+// Treasure chests deliberately remain absent from the minimap.
+// They render only on the world canvas so exploration can surprise the player.
