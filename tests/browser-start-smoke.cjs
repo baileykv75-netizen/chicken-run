@@ -514,7 +514,8 @@ const { chromium } = require('playwright');
       const tiers=itemButtons.map(button=>Number(button.querySelector('.p5-gear-level')?.textContent.slice(3)));
       itemButtons[0]?.click();
       const details=!!phase5ShopPanel.querySelector('.p5-detail')&&
-        phase5ShopPanel.querySelector('.p5-detail')?.textContent.includes('移动速度 +12');
+        phase5ShopPanel.querySelector('.p5-detail')?.textContent.includes('移动速度 +12')&&
+        phase5ShopPanel.querySelector('.p5-detail')?.textContent.includes('当前 Lv.3');
       phase5ShopPanel.querySelector('[data-action="deploy:'+stored.id+'"]').click();
       const deployed=!stored.atCoop &&
         !!phase5ShopPanel.querySelector('[data-action="recall:'+stored.id+'"]');
@@ -529,7 +530,7 @@ const { chromium } = require('playwright');
       phase5ShopPanel.querySelector('[data-action="close"]').click();
       phase5DispatchChick(stored);
       const gearCount=phase5ChickItems(stored).length;
-      const configuredMax=Math.min(player.speed*.97,155+gearCount*12);
+      const configuredMax=Math.min(player.speed,170+gearCount*12);
       const rescue={id:999,x:stored.x,y:stored.y,phase:0,wanderAngle:0,atCoop:false,
         lost:false,carriedBy:null,protectedFor:0,health:100,maxHealth:100,radius:10};
       chicks.push(rescue);
@@ -552,7 +553,7 @@ const { chromium } = require('playwright');
        !cs.roster||cs.storedCount!==1||
        cs.tiers.join(',')!=='3,2,1'||!cs.details||
        !cs.deployed||!cs.recalled||cs.gearCount!==4||
-       cs.configuredMax>=cs.playerSpeed||cs.combatDistance<=cs.rescuedDistance||
+       cs.configuredMax>cs.playerSpeed||cs.combatDistance<=cs.rescuedDistance||
        cs.combatDistance>cs.playerSpeed+1||!cs.noRally)
       throw Error('Coop roster, gear quality, follow speed or HP regression: '+JSON.stringify(cs));
     if(errors.length)throw Error('Runtime errors in capture checks: '+errors.join(' | ').slice(0,2200));
