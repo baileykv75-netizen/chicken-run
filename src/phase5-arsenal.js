@@ -273,6 +273,30 @@ phase5ShopButton.addEventListener('click',()=>{
   phase5Arsenal.shopOpen=true;state='paused';
   phase5ShopPanel.style.display='block';phase5ShopRender();
 });
+// Mouse drag on desktop; click buttons remain the fallback on touch screens.
+let phase5DragChickId=null;
+phase5ShopPanel.addEventListener('dragstart',ev=>{
+  const card=ev.target.closest('[data-drag-chick]');
+  if(!card)return;
+  phase5DragChickId=Number(card.dataset.dragChick);
+  ev.dataTransfer?.setData('text/plain',String(phase5DragChickId));
+  if(ev.dataTransfer)ev.dataTransfer.effectAllowed='move';
+});
+phase5ShopPanel.addEventListener('dragover',ev=>{
+  if(!ev.target.closest('[data-drop-roster="deployed"]'))return;
+  ev.preventDefault();
+  if(ev.dataTransfer)ev.dataTransfer.dropEffect='move';
+});
+phase5ShopPanel.addEventListener('drop',ev=>{
+  if(!ev.target.closest('[data-drop-roster="deployed"]'))return;
+  ev.preventDefault();
+  const id=Number(ev.dataTransfer?.getData('text/plain')||phase5DragChickId);
+  phase5DragChickId=null;
+  if(Number.isFinite(id)&&phase5DispatchChick(phase5ChickById(id))){
+    phase5ShopRender();
+  }
+});
+phase5ShopPanel.addEventListener('dragend',()=>{phase5DragChickId=null;});
 phase5ShopPanel.addEventListener('click',ev=>{
   const action=ev.target.closest('[data-action]')?.dataset.action;
   if(!action)return;
