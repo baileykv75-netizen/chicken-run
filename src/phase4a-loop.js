@@ -21,9 +21,11 @@ updateChicks = function updateFollowerOnlyChicks(deltaTime) {
     const playerDistance = Math.hypot(dx, dy);
     const followDirection = normalized(dx, dy);
 
-    if (playerDistance > player.chickAura) {
-      const excess = clamp((playerDistance - player.chickAura) / 120, 0, 1);
-      const followStrength = player.chickPull + excess * 95;
+    const deployedWithGear = typeof phase5ChickItems === 'function' && phase5ChickItems(chick).length > 0;
+    const followRadius = deployedWithGear ? 58 : player.chickAura;
+    if (playerDistance > followRadius) {
+      const excess = clamp((playerDistance - followRadius) / 95, 0, 1);
+      const followStrength = deployedWithGear ? 185 + excess * 80 : player.chickPull + excess * 95;
       velocityX += followDirection.x * followStrength;
       velocityY += followDirection.y * followStrength;
     } else if (playerDistance < 34) {
@@ -32,7 +34,11 @@ updateChicks = function updateFollowerOnlyChicks(deltaTime) {
       velocityY += separate.y * 28;
     }
 
-    const maxSpeed = ENDLESS_CONFIG.chickSpeed * rallySpeedMultiplier;
+    // Rescue followers keep their original movement. Every equipped weapon
+    // grants +12 speed; no combination can outrun the player.
+    const equippedCount = deployedWithGear ? phase5ChickItems(chick).length : 0;
+    const baseSpeed = equippedCount ? 155 + 12 * equippedCount : ENDLESS_CONFIG.chickSpeed;
+    const maxSpeed = equippedCount ? Math.min(player.speed * .97, baseSpeed) : baseSpeed * rallySpeedMultiplier;
     const speed = Math.hypot(velocityX, velocityY);
     if (speed > maxSpeed) {
       velocityX = (velocityX / speed) * maxSpeed;
@@ -41,7 +47,7 @@ updateChicks = function updateFollowerOnlyChicks(deltaTime) {
 
     // Choose a nearby tangent when the follow direction is blocked.
     const chickStep = Math.hypot(velocityX, velocityY);
-    if (playerDistance > player.chickAura && chickStep > 0.1
+    if (playerDistance > followRadius && chickStep > 0.1
         && !phase4jClear(chick.x + velocityX / chickStep * 55,
           chick.y + velocityY / chickStep * 55, chick.radius || 10)) {
       const route = phase4jSteer(chick, player.x, player.y);
