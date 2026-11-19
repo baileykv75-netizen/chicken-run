@@ -1,17 +1,4 @@
 commonUpgrades = function endlessCommonUpgrades() {
-  const rallyName =
-    player.rallyLevel === 0
-      ? '牧鸡铃·集合信号'
-      : player.rallyLevel === 1
-        ? '牧鸡铃·紧急召回'
-        : '牧鸡铃·安全集合';
-  const rallyDescription =
-    player.rallyLevel === 0
-      ? '鸡群跟随更紧凑，追赶能力提高'
-      : player.rallyLevel === 1
-        ? '每 12 秒自动响铃，鸡群快速回到身边'
-        : '响铃时小鸡加速，并短暂无法被抓走';
-
   return [
     {
       id: 'damage',
@@ -41,18 +28,6 @@ commonUpgrades = function endlessCommonUpgrades() {
       description: '守卫者移动速度提高 7%',
       apply: () => {
         player.speed *= 1.07;
-      },
-    },
-    {
-      id: 'rally',
-      icon: '🔔',
-      name: rallyName,
-      description: rallyDescription,
-      apply: () => {
-        player.rallyLevel = Math.min(3, player.rallyLevel + 1);
-        player.chickAura = Math.max(82, player.chickAura - 12);
-        player.chickPull += 18;
-        if (player.rallyLevel >= 2) player.rallyCooldown = Math.min(player.rallyCooldown, 2.5);
       },
     },
     {
