@@ -136,6 +136,132 @@ function phase5ShopItemInfo(item){
   const gear=PHASE5_GEAR_BY_ID[item.id];
   return phase5GearImage(item)+'<span class="p5-gear-name">'+gear.name+'</span>';
 }
+const PHASE5_GEAR_LEVEL_EFFECTS = {
+  "rotary": [
+    "单发自动射击",
+    "双弹道连续射击",
+    "四发轮射弹幕"
+  ],
+  "storm-spear": [
+    "贯穿最多4名直线目标",
+    "贯穿最多6名直线目标",
+    "贯穿最多8名目标并连锁电击"
+  ],
+  "sniper": [
+    "优先狙击精英狐狸",
+    "增加暴击概率",
+    "更高暴击与远距离穿甲重击"
+  ],
+  "grenade": [
+    "投掷小范围炸弹",
+    "爆炸范围增大",
+    "留下持续灼烧区"
+  ],
+  "hammer": [
+    "近距离范围击退",
+    "范围和击退增强",
+    "群体重击附加短暂眩晕"
+  ],
+  "armor": [
+    "额外生命上限与伤害减免",
+    "增强生命与伤害减免",
+    "低生命触发一次紧急防护"
+  ],
+  "orbit": [
+    "周期性近身旋刃",
+    "两轮旋刃同时攻击",
+    "增加旋刃范围和伤害"
+  ],
+  "thorns": [
+    "被攻击时反击",
+    "反击附带短暂减速",
+    "受击触发范围反击波"
+  ],
+  "frost": [
+    "对目标周围敌人施加减速",
+    "更大范围寒冷与少量伤害",
+    "扩大范围并短暂冻结"
+  ],
+  "pulse": [
+    "电击附近两只狐狸",
+    "电击三只并打断冲锋",
+    "连锁四只，控制更强"
+  ],
+  "gravity": [
+    "牵引狐狸至集结点",
+    "增加牵引范围",
+    "聚怪时产生额外伤害"
+  ],
+  "trap": [
+    "周期性放置减速陷阱",
+    "陷阱可造成伤害",
+    "更大的陷阱和更强缠绕"
+  ],
+  "leech": [
+    "攻击命中时吸取少量生命",
+    "提高伤害回血比例",
+    "进一步提高吸血比例"
+  ],
+  "heal": [
+    "冷却后恢复自身生命",
+    "也治疗附近受伤队友",
+    "更大范围的群体恢复"
+  ],
+  "shield": [
+    "低血量触发短暂防护",
+    "提高防护持续并缩短冷却",
+    "触发时击退近身狐狸"
+  ],
+  "drone": [
+    "自动治疗附近低血量队友或玩家",
+    "提高治疗量与范围",
+    "再提升治疗量与范围"
+  ],
+  "banner": [
+    "为附近小鸡提高攻击伤害",
+    "扩大范围与伤害增益",
+    "更大的范围和增益"
+  ],
+  "lure": [
+    "制造诱饵吸引普通狐狸",
+    "延长诱饵持续时间",
+    "诱饵消失时发生爆炸"
+  ],
+  "radar": [
+    "标记附近危险精英狐狸",
+    "延长高危目标探测距离",
+    "进一步扩大探测范围"
+  ],
+  "salvager": [
+    "击败狐狸额外获得1金币",
+    "击败狐狸额外获得2金币",
+    "击败狐狸额外获得3金币"
+  ],
+  "echo": [
+    "复制火力武器的额外攻击",
+    "复制攻击伤害提高",
+    "进一步提高复制攻击伤害"
+  ],
+  "timeslow": [
+    "短暂延缓附近敌人",
+    "延缓持续更久、范围更大",
+    "进一步延长控制和扩大范围"
+  ],
+  "phoenix": [
+    "每次出征一次致命防护",
+    "防护后保留更多生命",
+    "进一步增强致命防护恢复"
+  ],
+  "overdrive": [
+    "周期加速附近队友装备冷却",
+    "更长加速持续时间",
+    "更大的加速范围和持续时间"
+  ]
+};
+function phase5ChickMoveSpeed(chick){
+  const count=phase5ChickItems(chick).length;
+  return count?Math.min(player.speed,170+12*count):ENDLESS_CONFIG.chickSpeed;
+}
 function phase5GearDetails(item){
   if(!item)return '';
   const gear=PHASE5_GEAR_BY_ID[item.id],owner=chicks.find(c=>(c.equipment||[]).includes(item.uid));
@@ -143,7 +269,8 @@ function phase5GearDetails(item){
   return '<section class="p5-detail"><div class="p5-detail-header">'+phase5GearImage(item)+
     '<div><b>'+gear.name+' · Lv.'+item.level+'</b><p>'+gear.category+'装备 · '+(owner?'已装备于小鸡 #'+owner.id:'未装备')+'</p></div>'+
     phase5ShopCard('收起','detail:none')+'</div>'+
-    '<p>'+gear.description+'</p>'+
+    '<p><b>当前 Lv.'+item.level+'：</b>'+(effects[item.level-1]||gear.description)+'</p>'+
+    (item.level<3?'<p><b>下一级：</b>'+effects[item.level]+'</p>':'')+
     '<div class="p5-detail-stats"><span>移动速度 +12 / 件</span><span>最多同时装备4件</span><span>装备满级 Lv.3</span>'+
     (gear.cooldown>0?'<span>基础技能冷却 '+gear.cooldown+'秒</span>':'<span>被动效果 · 无主动冷却</span>')+'</div>'+
     '<div class="p5-detail-actions">'+phase5ShopCard(item.level<3?'强化 · 🪙'+cost:'已满级','upgrade:'+item.uid,item.level>=3||phase5.gold<cost||owner&&owner.trainingLevel<=item.level,'p5-primary')+
@@ -198,6 +325,7 @@ function phase5ShopRender(){
       const hp=Math.max(0,Math.ceil(selected.health)), max=selected.maxHealth;
       const healCost=Math.max(2,Math.ceil((max-hp)/5));
       html+='<div class="p5-chick-status"><div class="p5-status-title"><b>🐥 小鸡 #'+selected.id+' · Lv.'+selected.trainingLevel+'</b><span>武器 '+held.length+'/4</span></div>';
+      html+='<div class="p5-chick-movespeed">移动速度 '+Math.round(phase5ChickMoveSpeed(selected))+' / 玩家 '+Math.round(player.speed)+' · '+(held.length?'装备 '+held.length+'件':'尚未装备')+'</div>';
       html+='<div class="p5-hp-row"><span>生命 '+hp+'/'+max+'</span><div class="p5-hp-track"><i style="width:'+Math.max(0,Math.min(100,Math.round(hp/max*100)))+'%"></i></div></div>';
       html+='<div class="p5-actions">';
       html+=phase5ShopCard(cost?'升级小鸡 · 🪙'+cost:'已满级','level',!cost||phase5.gold<cost,'p5-primary');
