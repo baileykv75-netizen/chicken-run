@@ -266,6 +266,7 @@ function phase5GearDetails(item){
   if(!item)return '';
   const gear=PHASE5_GEAR_BY_ID[item.id],owner=chicks.find(c=>(c.equipment||[]).includes(item.uid));
   const cost=item.level===1?25:55;
+  const effects=PHASE5_GEAR_LEVEL_EFFECTS[item.id]||[];
   return '<section class="p5-detail"><div class="p5-detail-header">'+phase5GearImage(item)+
     '<div><b>'+gear.name+' · Lv.'+item.level+'</b><p>'+gear.category+'装备 · '+(owner?'已装备于小鸡 #'+owner.id:'未装备')+'</p></div>'+
     phase5ShopCard('收起','detail:none')+'</div>'+
