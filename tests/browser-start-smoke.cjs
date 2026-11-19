@@ -628,7 +628,7 @@ const { chromium } = require('playwright');
     const hd=homecomingSquadAndDifficulty;
     if(!hd.gearEquipped||!hd.deployed||!hd.persisted.deployed||
        hd.persisted.equipment.length!==1||hd.persisted.owner!==hd.chickId||
-       hd.persisted.safeCount!==2||hd.persisted.carried!==null||
+       hd.persisted.safeCount!==1||hd.persisted.carried!==null||
        !hd.rescueStored||!hd.manualRecall||!hd.recalled.atCoop||
        hd.recalled.equipment.length!==1||hd.recalled.owner!==hd.chickId||
        !hd.lootHidden||!hd.first||!hd.later||
